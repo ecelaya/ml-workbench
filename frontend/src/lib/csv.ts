@@ -1,20 +1,17 @@
 import Papa from 'papaparse';
-import type { ColumnProfile, Dataset, VariableType } from '../types/dataset';
+import type { ColumnProfile, Dataset } from '../types/dataset';
+import { inferRole, inferStorage } from './inference';
 export const MAX_BYTES = 10 * 1024 * 1024;
 export const MAX_ROWS = 100_000;
 export const MAX_COLUMNS = 200;
 export const isMissing = (value: string): boolean => value.trim() === '';
-function inferType(values: string[]): VariableType {
-  if (!values.length) return 'Sin datos';
-  if (values.every(v => /^(true|false)$/i.test(v))) return 'Booleana';
-  if (values.every(v => /^[+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?$/i.test(v) && Number.isFinite(Number(v)))) return 'Numérica';
-  if (values.every(v => /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(v)) && new Date(v).toISOString().slice(0, 10) === v)) return 'Fecha';
-  return 'Texto';
-}
 export function profile(headers: string[], rows: string[][]): ColumnProfile[] {
   return headers.map((name, i) => {
     const values = rows.map(row => (row[i] ?? '').trim()).filter(v => !isMissing(v));
-    return { name, type: inferType(values), missing: rows.length - values.length, unique: new Set(values).size };
+    const type = inferStorage(values);
+    const unique = new Set(values).size;
+    const suggestion = inferRole(name, values, type);
+    return { name, type, role: suggestion.role, suggestion, missing: rows.length - values.length, unique };
   });
 }
 export function parseCsv(file: File, onProgress?: (rows: number) => void): Promise<Dataset> {
