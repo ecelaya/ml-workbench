@@ -91,7 +91,7 @@ penguins.csv      f204db2c753b0937caac3cb35258562c14f073e4bbc76be24b4c51ce22767a
 
 ## Reproducción y validación
 
-Los CSV están versionados con el código y no se descargan ni generan durante el build. No se consulta UCI, OpenML ni Mendeley desde la aplicación en ejecución: solo se solicita el CSV estático al propio host de ML Workbench. Los archivos personales del usuario nunca se envían al servidor.
+Los CSV están versionados con el código y no se descargan ni generan durante el build. No se consulta UCI, OpenML ni Mendeley desde la aplicación en ejecución: solo se solicita el CSV estático al propio host de ML Workbench. Cargar o explorar archivos personales no los envía al servidor. Desde v0.3, solo si el usuario solicita Entrenar, el dataset procesado completo se envía a su backend FastAPI configurado.
 
 Para reproducir, descarga los enlaces indicados, extrae los ZIP y coloca `iris/iris.data`, `wine/wine.data`, `breast-cancer/wdbc.data`, `titanic.arff`, `california_housing.csv` y `penguins.csv` en un directorio local. Ejecuta desde la raíz:
 

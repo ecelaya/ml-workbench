@@ -19,6 +19,7 @@ export interface SampleDataset {
   bytes: number;
   sha256: string;
   missingValueTokens?: readonly string[];
+  suggestedExcludedPredictors?: readonly string[];
 }
 const ccBy = 'https://creativecommons.org/licenses/by/4.0/';
 export const SAMPLE_DATASETS: readonly SampleDataset[] = [
@@ -30,6 +31,7 @@ export const SAMPLE_DATASETS: readonly SampleDataset[] = [
     sourceUrl: 'https://www.openml.org/d/40945', authors: 'Frank E. Harrell Jr. y Thomas Cason; fuentes históricas citadas en OpenML.',
     license: 'CC BY según condiciones OpenML; metadato original: «Public»', licenseUrl: 'https://www.openml.org/terms',
     bytes: 104320, sha256: '98919d5c63fefef712481a38acd0d154887c4d96280af2c834a921ea05d124ee',
+    suggestedExcludedPredictors: ['boat', 'body'],
   },
   {
     id: 'iris', name: 'Iris', description: 'Medidas de sépalos y pétalos de tres especies de iris, expresadas en centímetros.',
