@@ -18,10 +18,11 @@ export interface SampleDataset {
   licenseUrl: string;
   bytes: number;
   sha256: string;
+  missingValueTokens?: readonly string[];
 }
 const ccBy = 'https://creativecommons.org/licenses/by/4.0/';
 export const SAMPLE_DATASETS: readonly SampleDataset[] = [
-  {
+ {
     id: 'titanic', name: 'Titanic', description: 'Pasajeros, supervivencia, categorías y valores ausentes. Versión completa titanic3.',
     filename: 'titanic.csv', rows: 1309, columns: 14, predictors: 13, identifiers: 0,
     problem: 'Clasificación binaria', target: 'survived', targetDescription: 'Supervivencia: 0 = no; 1 = sí.',
@@ -64,7 +65,18 @@ export const SAMPLE_DATASETS: readonly SampleDataset[] = [
     license: 'CC BY 4.0', licenseUrl: ccBy,
     bytes: 124571, sha256: '1beebcb6fe65e01dc93a1aafd43bee201723dc5bbd2479e5f7ed8c634e788202',
   },
-];
+  {
+    id: 'palmer-penguins', name: 'Palmer Penguins', description: 'Medidas de pingüinos de tres especies del archipiélago Palmer, con ausencias originales.',
+    filename: 'penguins.csv', rows: 344, columns: 8, predictors: 7, identifiers: 0,
+    problem: 'Clasificación multiclase', target: 'species', targetDescription: 'Especie: Adelie, Chinstrap o Gentoo.',
+    version: 'palmerpenguins · penguins.csv · snapshot 2026-10-27', source: 'Repositorio oficial palmerpenguins / Palmer Station LTER',
+    sourceUrl: 'https://raw.githubusercontent.com/allisonhorst/palmerpenguins/main/inst/extdata/penguins.csv',
+    authors: 'Kristen B. Gorman y Palmer Station LTER; paquete: Allison M. Horst, Alison P. Hill y Kristen B. Gorman (2020).',
+    license: 'CC0 1.0 (datos)', licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/',
+    bytes: 15241, sha256: 'f204db2c753b0937caac3cb35258562c14f073e4bbc76be24b4c51ce22767a93',
+    missingValueTokens: ['NA'],
+  },
+ ];
 
 export function sampleDatasetUrl(sample: SampleDataset, baseUrl: string): string {
   return `${baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`}datasets/${sample.filename}`;

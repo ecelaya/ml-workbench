@@ -27,9 +27,10 @@ export default function App() {
     try {
       const sample = source instanceof File ? null : source;
       const file = source instanceof File ? source : await sampleDatasetFile(source, import.meta.env.BASE_URL);
-      const result = await parseCsv(file, setProgress);
+      const result = await parseCsv(file, setProgress, { missingValueTokens: sample?.missingValueTokens });
       if (sample) validateSampleDataset(result, sample);
       setDataset(result); setActiveSample(sample); setDatasetRevision(v => v + 1); setTab('overview');
+      if (sample) setExamplesOpen(false);
     }
     catch (e) { setError(e instanceof Error ? e.message : 'No se pudo procesar el CSV.'); }
     finally { loading.current = false; setBusy(false); }

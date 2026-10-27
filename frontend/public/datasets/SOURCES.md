@@ -9,6 +9,7 @@ Revisión y descarga: 2026-10-27. Se distribuyen datos reales completos, no mues
 | california-housing.csv | 20640 | 9 | MedHouseVal | Mendeley hhb6nwfft8, v1, publicada 2026-09-03; archivo 891e5207-9af4-48d6-b52d-1786310ef8a5 |
 | wine.csv | 178 | 14 | cultivar_type | UCI 109, miembro wine.data del snapshot descargado el 2026-10-27 |
 | breast-cancer-wisconsin-diagnostic.csv | 569 | 32 | diagnosis | UCI 17, miembro wdbc.data del snapshot descargado el 2026-10-27 |
+| penguins.csv | 344 | 8 | species | palmerpenguins, inst/extdata/penguins.csv de main, snapshot 2026-10-27 identificado por SHA-256 |
 
 UCI no asigna una versión semántica a esos miembros: se identifican por nombre, fecha y SHA-256. No se presentan como una versión numerada inexistente. Las huellas de los archivos de origen y de los CSV distribuidos figuran al final.
 
@@ -56,7 +57,15 @@ UCI no asigna una versión semántica a esos miembros: se identifican por nombre
 - Cambios: solo cabeceras añadidas. Se mantienen `id`, `diagnosis` y las 30 mediciones, en tres bloques de diez: media (`_mean`), error estándar (`_se`) y peor valor (`_worst`), en el mismo orden del archivo. No se elimina el ID, no se recodifica el objetivo y no se añade un índice artificial.
 - Objetivo: `diagnosis`, B = benigno (357), M = maligno (212). Es WDBC Diagnostic, no Wisconsin Original ni Prognostic.
 
-## Huellas de integridad
+### Palmer Penguins
+
+- [CSV oficial solicitado](https://raw.githubusercontent.com/allisonhorst/palmerpenguins/main/inst/extdata/penguins.csv), [documentación oficial y licencia de los datos](https://allisonhorst.github.io/palmerpenguins/#license). Se incluye `penguins` (344 × 8), no `penguins_raw` (17 columnas).
+- Datos recopilados por Kristen B. Gorman y Palmer Station LTER. Paquete: Horst, A. M., Hill, A. P. & Gorman, K. B. (2020), *palmerpenguins*, [DOI 10.5281/zenodo.3960218](https://doi.org/10.5281/zenodo.3960218). Trabajo original: Gorman, Williams & Fraser (2014), [DOI 10.1371/journal.pone.0090081](https://doi.org/10.1371/journal.pone.0090081).
+- Licencia de **datos**: [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/), según la documentación oficial y las políticas Palmer Station LTER y LTER allí enlazadas. Permite copia, redistribución y adaptación sin restricciones de copyright en los términos de CC0. Se conserva la atribución científica recomendada; no se confunde con la licencia del código del paquete.
+- Copia byte a byte del CSV oficial, con sus cabeceras, valores y 19 marcadores `NA` originales: dos en cada medida corporal y once en `sex`. No se eliminan filas ni se imputan valores. Para cargar **este ejemplo** el catálogo declara explícitamente `missingValueTokens: ['NA']`: el parser existente representa esas celdas ausentes como vacías en memoria. El CSV ofrecido para descargar conserva los `NA`; los CSV propios siguen tratando `NA`, `NULL` y `N/A` como texto por defecto.
+- Objetivo `species`: Adelie (152), Chinstrap (68), Gentoo (124). Siete columnas adicionales; medidas en mm y g. `year` conserva los años originales. `main` es mutable, por lo que esta copia queda identificada por fecha y SHA-256, sin atribuirle una versión numerada no verificada.
+
+## Huellas de integridad (incluye Palmer Penguins)
 
 SHA-256 de los miembros de origen (antes de añadir cabeceras o convertir ARFF):
 
@@ -66,6 +75,7 @@ iris.data         6f608b71a7317216319b4d27b4d9bc84e6abd734eda7872b71a458569e2656
 wine.data         6be6b1203f3d51df0b553a70e57b8a723cd405683958204f96d23d7cd6aea659
 wdbc.data         d606af411f3e5be8a317a5a8b652b425aaf0ff38ca683d5327ffff94c3695f4a
 california_housing.csv 94ef369b909f5c725340b512b7c9a05c1550a554b6592d29303990e3ba521a1f
+penguins.csv      f204db2c753b0937caac3cb35258562c14f073e4bbc76be24b4c51ce22767a93
 ```
 
 CSV distribuidos (las mismas huellas se verifican en las pruebas):
@@ -76,13 +86,14 @@ iris.csv          b9c2c79bfac42185ece47e3c0ac4b646594eccc0cf279546dd336b626ec9e7
 california-housing.csv 94ef369b909f5c725340b512b7c9a05c1550a554b6592d29303990e3ba521a1f
 wine.csv          7c7cc9088c05defbb0de77c923ba7e1a16b22acb5c9c73652bb04217751a976d
 breast-cancer-wisconsin-diagnostic.csv 1beebcb6fe65e01dc93a1aafd43bee201723dc5bbd2479e5f7ed8c634e788202
+penguins.csv      f204db2c753b0937caac3cb35258562c14f073e4bbc76be24b4c51ce22767a93
 ```
 
 ## Reproducción y validación
 
 Los CSV están versionados con el código y no se descargan ni generan durante el build. No se consulta UCI, OpenML ni Mendeley desde la aplicación en ejecución: solo se solicita el CSV estático al propio host de ML Workbench. Los archivos personales del usuario nunca se envían al servidor.
 
-Para reproducir, descarga los enlaces indicados, extrae los ZIP y coloca `iris/iris.data`, `wine/wine.data`, `breast-cancer/wdbc.data`, `titanic.arff` y `california_housing.csv` en un directorio local. Ejecuta desde la raíz:
+Para reproducir, descarga los enlaces indicados, extrae los ZIP y coloca `iris/iris.data`, `wine/wine.data`, `breast-cancer/wdbc.data`, `titanic.arff`, `california_housing.csv` y `penguins.csv` en un directorio local. Ejecuta desde la raíz:
 
 ```sh
 node frontend/scripts/prepare-sample-datasets.mjs RUTA_AL_DIRECTORIO
@@ -91,4 +102,4 @@ npm run typecheck
 npm run build
 ```
 
-El script rechaza fuentes cuya huella no coincida. Las pruebas usan exactamente `parseCsv(File)` para los cinco CSV, verifican dimensiones, tipos de problema por frecuencias de objetivo, ausencias e integridad. Se calculan estadísticas con todas las filas, incluyendo las 20640 de California Housing. Solo se adapta FileReader al ejecutar las pruebas en Node; el parsing, validación y perfiles son los del producto. Los gráficos pueden muestrear puntos para dibujarlos, pero los cálculos estadísticos no usan esa muestra.
+El script rechaza fuentes cuya huella no coincida. Las pruebas usan exactamente `parseCsv(File)` para los seis CSV, verifican dimensiones, tipos de problema por frecuencias de objetivo, ausencias e integridad. Se calculan estadísticas con todas las filas, incluyendo las 20640 de California Housing. Solo se adapta FileReader al ejecutar las pruebas en Node; el parsing, validación y perfiles son los del producto. Los gráficos pueden muestrear puntos para dibujarlos, pero los cálculos estadísticos no usan esa muestra.

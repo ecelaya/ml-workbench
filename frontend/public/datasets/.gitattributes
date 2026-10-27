@@ -1,0 +1,2 @@
+# Preserve the official CSV byte for byte, including LF line endings.
+penguins.csv -text

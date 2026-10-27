@@ -37,7 +37,7 @@ El build genera `frontend/dist/`. Para instalaciones reproducibles usa `npm ci` 
 
 ### Datasets de ejemplo
 
-La carga de archivos propios sigue siendo la acción principal. **Explorar dataset de ejemplo** despliega un catálogo de Titanic, Iris, California Housing, Wine y Breast Cancer Wisconsin Diagnostic. Cada ficha muestra descripción, registros, columnas totales, problema, objetivo sugerido, versión y atribución. Un clic carga el CSV estático usando exactamente el mismo `File → parseCsv → análisis` que un archivo propio. Puedes descargar el CSV del ejemplo, cambiar entre ejemplos y archivos personales y corregir los roles manualmente. El nombre del ejemplo activo y su objetivo sugerido aparecen sobre el resumen. No se entrena ningún modelo.
+La carga de archivos propios sigue siendo la acción principal. **Explorar dataset de ejemplo** despliega un catálogo de Titanic, Iris, California Housing, Wine, Breast Cancer Wisconsin Diagnostic y Palmer Penguins. Cada ficha muestra descripción, registros, columnas totales, problema, objetivo sugerido, versión y atribución. Un clic carga el CSV estático usando exactamente el mismo `File → parseCsv → análisis` que un archivo propio. Puedes descargar el CSV del ejemplo, cambiar entre ejemplos y archivos personales y corregir los roles manualmente. El nombre del ejemplo activo y su objetivo sugerido aparecen sobre el resumen. No se entrena ningún modelo.
 
 Los archivos completos están en `frontend/public/datasets/`; el catálogo tipado está en `frontend/src/data/sampleDatasets.ts`. Las [fuentes, versiones, licencias, cambios y SHA-256](frontend/public/datasets/SOURCES.md) identifican cada copia. Titanic es OpenML v1 completo (1309 filas), no el train de Kaggle de 891 filas. California Housing es la exportación versionada de scikit-learn de 20640 filas y 9 columnas. El total de columnas incluye el objetivo y, en WDBC, el ID original.
 
@@ -45,7 +45,7 @@ Al cargar correctamente un nuevo dataset se incrementa la revisión del dataset:
 
 Los CSV se sirven desde el propio frontend, mediante rutas que respetan el `BASE_URL` de Vite. Vercel los copia automáticamente a `dist/datasets/`; no requieren backend, claves ni llamadas a servicios de terceros. No se descargan durante el build. Solo se obtiene por HTTP el ejemplo elegido; el parsing y análisis siguen siendo locales y los archivos personales no se transmiten. Se necesita el servidor local o el host Vercel para servir los assets; no se añade un modo offline ni persistencia.
 
-Las pruebas verifican los cinco archivos íntegros, sus huellas y dimensiones, los límites de carga y el flujo real de `parseCsv(File)`, así como recuentos del objetivo y estadísticos sobre todas las filas. Los detalles de reproducción figuran en `SOURCES.md`.
+Las pruebas verifican los seis archivos íntegros, sus huellas y dimensiones, los límites de carga y el flujo real de `parseCsv(File)`, así como recuentos del objetivo y estadísticos sobre todas las filas. Palmer Penguins conserva el CSV oficial de 344 filas y 8 columnas, con objetivo `species` y licencia de datos CC0. Sus 19 marcadores `NA` originales se interpretan como ausencias solo al cargar ese ejemplo, mediante configuración explícita del catálogo; la descarga conserva los marcadores y los archivos propios mantienen la política habitual de `NA` como texto. No se imputan ausencias ni se eliminan filas. Los detalles de reproducción figuran en `SOURCES.md`.
 
 ### Archivos propios
 

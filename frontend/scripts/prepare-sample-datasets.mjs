@@ -38,7 +38,9 @@ const attributes = [...titanic.matchAll(/^@attribute '([^']+)'/gm)].map(match =>
 save('titanic.csv', attributes, parse(titanic.split(/@data\s*\r?\n/i)[1]).map(row => row.map(value => value === '?' ? '' : value)), 1309);
 read('california_housing.csv', '94ef369b909f5c725340b512b7c9a05c1550a554b6592d29303990e3ba521a1f');
 copyFileSync(resolve(input, 'california_housing.csv'), resolve(output, 'california-housing.csv'));
-for (const file of ['titanic.csv', 'iris.csv', 'california-housing.csv', 'wine.csv', 'breast-cancer-wisconsin-diagnostic.csv']) {
+read('penguins.csv', 'f204db2c753b0937caac3cb35258562c14f073e4bbc76be24b4c51ce22767a93');
+copyFileSync(resolve(input, 'penguins.csv'), resolve(output, 'penguins.csv'));
+for (const file of ['titanic.csv', 'iris.csv', 'california-housing.csv', 'wine.csv', 'breast-cancer-wisconsin-diagnostic.csv', 'penguins.csv']) {
   const buffer = readFileSync(resolve(output, file));
   console.log(`${file}  ${buffer.length} bytes  SHA-256 ${hash(buffer)}`);
 }

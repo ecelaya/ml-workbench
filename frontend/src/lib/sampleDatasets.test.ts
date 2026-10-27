@@ -30,7 +30,7 @@ for (const sample of SAMPLE_DATASETS) {
     assert.equal(requested, `/workbench/datasets/${sample.filename}`);
     assert.equal(file.name, sample.filename);
     let progressed = 0;
-    const dataset = await parseCsv(file, count => { progressed = count; });
+    const dataset = await parseCsv(file, count => { progressed = count; }, { missingValueTokens: sample.missingValueTokens });
     validateSampleDataset(dataset, sample);
     assert.equal(dataset.rows.length, sample.rows); assert.equal(dataset.headers.length, sample.columns);
     assert.equal(progressed, sample.rows);
@@ -48,12 +48,17 @@ for (const sample of SAMPLE_DATASETS) {
       assert.equal(dataset.missing, 0);
     } else {
       const counts = Object.fromEntries(classes.categories.map(c => [c.name, c.count]));
-      const expected = { titanic: { '0': 809, '1': 500 }, iris: { 'Iris-setosa': 50, 'Iris-versicolor': 50, 'Iris-virginica': 50 }, wine: { '1': 59, '2': 71, '3': 48 }, 'breast-cancer': { B: 357, M: 212 } };
+      const expected = { titanic: { '0': 809, '1': 500 }, iris: { 'Iris-setosa': 50, 'Iris-versicolor': 50, 'Iris-virginica': 50 }, wine: { '1': 59, '2': 71, '3': 48 }, 'breast-cancer': { B: 357, M: 212 }, 'palmer-penguins': { Adelie: 152, Chinstrap: 68, Gentoo: 124 } };
       assert.deepEqual(counts, expected[sample.id as keyof typeof expected]);
       if (sample.id === 'titanic') {
         assert.equal(dataset.missing, 3855);
         const age = dataset.headers.indexOf('age');
         assert.equal(describe(dataset.rows.map(row => numericValue(row[age]))).n, 1046);
+      } else if (sample.id === 'palmer-penguins') {
+        assert.equal(dataset.missing, 19);
+        assert.deepEqual(dataset.headers, ['species', 'island', 'bill_length_mm', 'bill_depth_mm', 'flipper_length_mm', 'body_mass_g', 'sex', 'year']);
+        assert.deepEqual(dataset.columns.map(c => c.missing), [0, 0, 2, 2, 2, 2, 11, 0]);
+        assert.equal(describe(dataset.rows.map(row => numericValue(row[5]))).n, 342);
       } else assert.equal(dataset.missing, 0);
     }
     // The last record is available for analysis/export, not just the first page.
@@ -61,12 +66,12 @@ for (const sample of SAMPLE_DATASETS) {
   });
 }
 test('rutas estáticas admiten Vercel, desarrollo y un base path', () => {
-  const sample = SAMPLE_DATASETS[0]!;
+  const sample = SAMPLE_DATASETS.find(s => s.id === 'titanic')!;
   assert.equal(sampleDatasetUrl(sample, '/'), '/datasets/titanic.csv');
   assert.equal(sampleDatasetUrl(sample, '/app'), '/app/datasets/titanic.csv');
   assert.equal(sampleDatasetUrl(sample, '/app/'), '/app/datasets/titanic.csv');
-  assert.equal(new Set(SAMPLE_DATASETS.map(s => s.id)).size, 5);
-  assert.equal(new Set(SAMPLE_DATASETS.map(s => s.filename)).size, 5);
+  assert.equal(new Set(SAMPLE_DATASETS.map(s => s.id)).size, 6);
+  assert.equal(new Set(SAMPLE_DATASETS.map(s => s.filename)).size, 6);
 });
 test('errores HTTP, HTML y archivos truncados no llegan al análisis', async () => {
   const sample = SAMPLE_DATASETS[0]!;
@@ -82,4 +87,30 @@ test('metadatos incompatibles se rechazan después del mismo parser', async () =
   assert.throws(() => validateSampleDataset(dataset, { ...sample, rows: 99 }), /no coinciden/);
   assert.throws(() => validateSampleDataset(dataset, { ...sample, columns: 99 }), /no coinciden/);
   assert.throws(() => validateSampleDataset(dataset, { ...sample, target: 'unknown' }), /no coinciden/);
+});
+
+test('Penguins conserva cada ausencia original; NA solo se interpreta con configuración explícita', async () => {
+  const sample = SAMPLE_DATASETS.find(s => s.id === 'palmer-penguins')!;
+  const buffer = contents(sample.filename);
+  const file = new File([new Uint8Array(buffer)], sample.filename);
+  const unconfigured = await parseCsv(file);
+  const configured = await parseCsv(file, undefined, { missingValueTokens: sample.missingValueTokens });
+  assert.equal(unconfigured.missing, 0);
+  assert.equal(configured.missing, 19);
+  let markers = 0;
+  for (let i = 0; i < unconfigured.rows.length; i++) {
+    for (let j = 0; j < unconfigured.headers.length; j++) {
+      const value = unconfigured.rows[i]![j]!;
+      if (value === 'NA') markers++;
+      assert.equal(configured.rows[i]![j], value === 'NA' ? '' : value);
+    }
+  }
+  assert.equal(markers, 19);
+  assert.ok(buffer.toString('utf8').includes('Adelie,Torgersen,NA,NA,NA,NA,NA,2007'));
+  assert.equal(configured.columns[2]?.role, 'Numérica');
+  assert.equal(configured.columns[2]?.type, 'Decimal');
+  // A subsequent personal file uses defaults again; marker settings never leak.
+  const personal = await parseCsv(new File(['a,b,c\nNA,NULL,N/A'], 'personal.csv'));
+  assert.deepEqual(personal.rows, [['NA', 'NULL', 'N/A']]);
+  assert.equal(personal.missing, 0);
 });
