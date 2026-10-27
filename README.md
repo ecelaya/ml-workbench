@@ -1,4 +1,4 @@
-# ML Workbench · v0.2
+# ML Workbench · v0.2.2
 
 Aplicación para explorar datasets CSV localmente. React, TypeScript estricto, Vite, Tailwind CSS y Recharts. No requiere cuentas, APIs, base de datos ni backend. No se envían archivos a ningún servidor y no se guardan en almacenamiento persistente: al recargar la página se descartan.
 
@@ -34,6 +34,20 @@ npm run preview
 El build genera `frontend/dist/`. Para instalaciones reproducibles usa `npm ci` con el lockfile incluido.
 
 ## Uso y límites
+
+### Datasets de ejemplo
+
+La carga de archivos propios sigue siendo la acción principal. **Explorar dataset de ejemplo** despliega un catálogo de Titanic, Iris, California Housing, Wine y Breast Cancer Wisconsin Diagnostic. Cada ficha muestra descripción, registros, columnas totales, problema, objetivo sugerido, versión y atribución. Un clic carga el CSV estático usando exactamente el mismo `File → parseCsv → análisis` que un archivo propio. Puedes descargar el CSV del ejemplo, cambiar entre ejemplos y archivos personales y corregir los roles manualmente. El nombre del ejemplo activo y su objetivo sugerido aparecen sobre el resumen. No se entrena ningún modelo.
+
+Los archivos completos están en `frontend/public/datasets/`; el catálogo tipado está en `frontend/src/data/sampleDatasets.ts`. Las [fuentes, versiones, licencias, cambios y SHA-256](frontend/public/datasets/SOURCES.md) identifican cada copia. Titanic es OpenML v1 completo (1309 filas), no el train de Kaggle de 891 filas. California Housing es la exportación versionada de scikit-learn de 20640 filas y 9 columnas. El total de columnas incluye el objetivo y, en WDBC, el ID original.
+
+Al cargar correctamente un nuevo dataset se incrementa la revisión del dataset: se reinician roles, orden ordinal, selecciones, gráficos, paginaciones y filtros dependientes del anterior. Si la descarga o validación falla se conserva el dataset anterior. La carga impide operaciones concurrentes. Los ejemplos no modifican el parser ni los cálculos del EDA.
+
+Los CSV se sirven desde el propio frontend, mediante rutas que respetan el `BASE_URL` de Vite. Vercel los copia automáticamente a `dist/datasets/`; no requieren backend, claves ni llamadas a servicios de terceros. No se descargan durante el build. Solo se obtiene por HTTP el ejemplo elegido; el parsing y análisis siguen siendo locales y los archivos personales no se transmiten. Se necesita el servidor local o el host Vercel para servir los assets; no se añade un modo offline ni persistencia.
+
+Las pruebas verifican los cinco archivos íntegros, sus huellas y dimensiones, los límites de carga y el flujo real de `parseCsv(File)`, así como recuentos del objetivo y estadísticos sobre todas las filas. Los detalles de reproducción figuran en `SOURCES.md`.
+
+### Archivos propios
 
 Carga o arrastra un `.csv` UTF-8 con una cabecera y al menos una fila. Papa Parse detecta el separador (incluidos coma, punto y coma y tabulador), interpreta comillas, campos con separadores y saltos de línea entrecomillados. Las líneas completamente vacías se ignoran. Se rechazan cabeceras vacías o duplicadas, filas con distinto número de campos y errores de sintaxis; no se muestran resultados parciales. Una carga fallida conserva el dataset previo.
 
