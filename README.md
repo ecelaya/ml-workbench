@@ -69,6 +69,16 @@ Pearson usa casos completos por pareja, mostrando `r` y `n` en cada celda. No se
 
 Las pruebas estadísticas cubren nulos, conversiones estrictas, cuartiles, varianza muestral, constantes, muestras insuficientes, correlaciones positivas/negativas/nulas, casos completos por pareja, números grandes, límites del histograma, frecuencias y selección según roles.
 
+## Diagnóstico de ausencias por fila y columna
+
+En **Calidad de datos**, el gráfico por columna utiliza siempre un eje de 0–100 %, muestra el porcentaje sin redondeo adicional en el tooltip y permite alternar entre el orden original del archivo y porcentaje de ausencias descendente. Se muestran 20 columnas por página, sin omitir las restantes.
+
+El diagnóstico por fila utiliza todos los registros procesados que la aplicación conserva en memoria, sin muestreo. Por defecto se consideran todas las columnas, incluidos identificadores. Puedes cambiar la selección sin alterar el diagnóstico por columna ni los datos. Con cero columnas seleccionadas no se calculan porcentajes. La media, mediana y máximo usan el porcentaje de ausencias en la selección; se distinguen filas vacías en todas las columnas originales y filas con 100 % de ausencias solo en la selección.
+
+La distribución usa intervalos excluyentes: 0 %, (0,10], (10,20], (20,40], (40,60], (60,80] y (80,100]. Cada intervalo muestra número de filas y porcentaje sobre todos los registros procesados. El umbral parte de 40 % y aplica «estrictamente mayor», sin redondeo previo. La tabla filtra todos los registros y pagina de 20 en 20. La descarga CSV incluye todas las filas filtradas, todas las columnas originales y su contenido; no incluye las métricas añadidas en pantalla. Se genera localmente con Papa Parse, conservando el separador detectado y escapando comillas y saltos de línea. No se eliminan ni transforman registros.
+
+Solo se consideran ausentes campos vacíos o con espacios, reutilizando `isMissing`; `NA`, `NULL` y `N/A` siguen siendo texto. El lector ya omite líneas completamente vacías, por lo que el diagnóstico se refiere a los registros procesados, no a líneas físicas descartadas durante la lectura. No se necesita relectura del archivo: todos los registros aceptados se almacenan en memoria dentro de los límites de carga.
+
 ## Desplegar en Vercel
 
 1. Sube este monorepositorio a tu proveedor Git e impórtalo en Vercel.
