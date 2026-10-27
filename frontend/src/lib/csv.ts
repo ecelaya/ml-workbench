@@ -14,7 +14,9 @@ export function profile(headers: string[], rows: string[][]): ColumnProfile[] {
     return { name, type, role: suggestion.role, suggestion, missing: rows.length - values.length, unique };
   });
 }
-export function parseCsv(file: File, onProgress?: (rows: number) => void): Promise<Dataset> {
+export interface CsvParseOptions { missingValueTokens?: readonly string[] }
+export function parseCsv(file: File, onProgress?: (rows: number) => void, options: CsvParseOptions = {}): Promise<Dataset> {
+  const missingTokens = new Set(options.missingValueTokens ?? []);
   return new Promise((resolve, reject) => {
     if (!/\.csv$/i.test(file.name)) { reject(new Error('Selecciona un archivo con extensión .csv.')); return; }
     if (file.size > MAX_BYTES) { reject(new Error('El archivo supera el límite de 10 MB.')); return; }
@@ -39,7 +41,9 @@ export function parseCsv(file: File, onProgress?: (rows: number) => void): Promi
           } else if (row.length !== headers.length) failure = `La fila de datos ${rows.length + 1} tiene ${row.length} campos; se esperaban ${headers.length}.`;
           else if (rows.length >= MAX_ROWS) failure = 'El CSV supera el límite de 100.000 filas.';
           else if (row.some(v => v.includes('\uFFFD') || v.includes('\0'))) failure = 'Usa un archivo de texto CSV con codificación UTF-8.';
-          else rows.push(row);
+          // Explicit, per-load markers only. Personal CSVs keep NA/NULL as text
+          // unless configured; the bundled original CSV is never rewritten.
+          else rows.push(missingTokens.size ? row.map(value => missingTokens.has(value) ? '' : value) : row);
         }
         onProgress?.(rows.length);
         if (failure) { parser.abort(); reject(new Error(failure)); }
