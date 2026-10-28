@@ -1,45 +1,108 @@
+import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import MinMaxScaler, OneHotEncoder, StandardScaler
+from sklearn.preprocessing import MinMaxScaler, OneHotEncoder, OrdinalEncoder, StandardScaler
 
-from .schemas import ExperimentConfig
+from .schemas import ExperimentConfig, VariablePreprocessing
 from .validation import DataError, MAX_CATEGORIES, MAX_ENCODED_FEATURES
 
 
+def variable_policy(config: ExperimentConfig, name: str):
+    defaults = config.preprocessing
+    override = defaults.variables.get(name, VariablePreprocessing())
+    numeric = config.roles[name] == 'Numérica'
+    return {
+        'imputation': (override.numeric_imputation or defaults.numeric_imputation) if numeric else (override.categorical_imputation or defaults.categorical_imputation),
+        'scaling': (override.scaling or defaults.scaling) if numeric else 'none',
+        'encoding': 'none' if numeric else (override.encoding or 'onehot'),
+        'order': override.ordinal_categories if override.encoding == 'ordinal' else None,
+    }
+
+
 def build_preprocessor(X_train: pd.DataFrame, config: ExperimentConfig):
-    """Configure transformations from training data only; fit happens in Pipeline."""
-    numeric = [name for name in config.predictors if config.roles[name] == 'Numérica']
-    categorical = [name for name in config.predictors if name not in numeric]
-    estimated = len(numeric)
-    warnings = []
-    for name in config.predictors:
+    """Group equivalent policies; inspect only train, then fit inside Pipeline."""
+    groups = {}
+    notes = []
+    estimated = 0
+    active = config.active_predictors()
+    ordered = sorted(active, key=lambda name: config.roles[name] != 'Numérica')
+    for name in ordered:
+        policy = variable_policy(config, name)
+        numeric = config.roles[name] == 'Numérica'
         unique = X_train[name].nunique(dropna=True)
         if unique == 0:
-            warnings.append(f'«{name}» está vacía en train: se conserva con imputación de respaldo (0 numérico o categoría de ausencia).')
+            notes.append(f'«{name}» está vacía en train: se conserva con imputación de respaldo (0 numérico o categoría de ausencia).')
         elif unique == 1:
-            warnings.append(f'«{name}» es constante entre los valores válidos de train.')
-        if name in categorical:
+            notes.append(f'«{name}» es constante entre los valores válidos de train.')
+        if not numeric:
             if unique > MAX_CATEGORIES:
                 raise DataError(f'«{name}» supera 2.000 categorías en entrenamiento. Exclúyela o revisa su rol.')
-            estimated += max(unique, 1) + 1
             if unique > 50:
-                warnings.append(f'«{name}» tiene alta cardinalidad en train ({unique} categorías); OneHotEncoder usará representación dispersa.')
+                notes.append(f'«{name}» tiene alta cardinalidad en train ({unique} categorías).')
+            if policy['encoding'] == 'ordinal':
+                if not policy['order']:
+                    raise DataError(f'«{name}» necesita un orden explícito para Ordinal Encoding.')
+                if set(X_train[name].dropna()) - set(policy['order']):
+                    raise DataError(f'El orden explícito de «{name}» no incluye todas las categorías observadas en train.')
+        estimated += max(unique, 1) + 1 if policy['encoding'] == 'onehot' else 1
+        kind = 'numeric' if numeric else 'ordinal' if policy['encoding'] == 'ordinal' else 'categorical'
+        key = (kind, policy['imputation'], policy['scaling'], tuple(policy['order'] or []))
+        groups.setdefault(key, []).append(name)
     if estimated > MAX_ENCODED_FEATURES:
         raise DataError('La codificación podría superar 10.000 columnas. Selecciona menos predictores categóricos.')
-    prep = config.preprocessing
-    num_steps = [('imputer', SimpleImputer(strategy=prep.numeric_imputation, keep_empty_features=True))]
-    if prep.scaling != 'none':
-        num_steps.append(('scaler', StandardScaler() if prep.scaling == 'standard' else MinMaxScaler()))
-    num_pipeline = Pipeline(num_steps)
-    cat_pipeline = Pipeline([
-        ('imputer', SimpleImputer(strategy=prep.categorical_imputation, fill_value='__ML_WORKBENCH_MISSING__', keep_empty_features=True)),
-        ('encoder', OneHotEncoder(handle_unknown='ignore', sparse_output=True)),
-    ])
-    transformers = []
-    if numeric:
-        transformers.append(('numeric', num_pipeline, numeric))
-    if categorical:
-        transformers.append(('categorical', cat_pipeline, categorical))
-    return ColumnTransformer(transformers, remainder='drop', sparse_threshold=1.0), warnings
+    transformers, metadata, counters = [], {}, {}
+    for (kind, strategy, scaling, order), columns in groups.items():
+        number = counters.get(kind, 0)
+        counters[kind] = number + 1
+        group_name = kind if number == 0 else f'{kind}_{number}'
+        steps = [('imputer', SimpleImputer(strategy=strategy, fill_value='__ML_WORKBENCH_MISSING__' if kind != 'numeric' else None, keep_empty_features=True))]
+        if kind == 'numeric' and scaling != 'none':
+            steps.append(('scaler', StandardScaler() if scaling == 'standard' else MinMaxScaler()))
+        elif kind == 'categorical':
+            steps.append(('encoder', OneHotEncoder(handle_unknown='ignore', sparse_output=True)))
+        elif kind == 'ordinal':
+            steps.append(('encoder', OrdinalEncoder(categories=[list(order) for _ in columns], handle_unknown='use_encoded_value', unknown_value=-1)))
+        transformers.append((group_name, Pipeline(steps), columns))
+        metadata[group_name] = {'columns': columns, 'kind': kind}
+    preprocessor = ColumnTransformer(transformers, remainder='drop', sparse_threshold=1.0)
+    preprocessor._workbench_groups = metadata
+    return preprocessor, notes
+
+
+def fitted_pipeline_summary(preprocessor, X_test: pd.DataFrame, config: ExperimentConfig, excluded_target: int):
+    """Report fitted objects, never merely configured or unselected policies."""
+    rows, notes = [], []
+    for group_name, metadata in preprocessor._workbench_groups.items():
+        fitted = preprocessor.named_transformers_[group_name]
+        imputer = fitted.named_steps['imputer']
+        encoder = fitted.named_steps.get('encoder')
+        imputed_test = imputer.transform(X_test[metadata['columns']]) if encoder is not None else None
+        for i, name in enumerate(metadata['columns']):
+            policy = variable_policy(config, name)
+            statistic = imputer.statistics_[i]
+            if isinstance(statistic, np.generic):
+                statistic = statistic.item()
+            unknown = 0
+            if encoder is not None:
+                known = set(encoder.categories_[i])
+                unknown = sum(value not in known for value in imputed_test[:, i])
+                if unknown:
+                    action = 'código -1, reservado fuera del orden' if metadata['kind'] == 'ordinal' else 'vector One-Hot de ceros'
+                    notes.append(f'«{name}»: {unknown} valores en test no pertenecen a las categorías de la codificación; se representan como {action}. No se reajusta el encoder con test.')
+            rows.append({
+                'variable': name, 'role': config.roles[name], 'imputation': imputer.strategy,
+                'imputation_value': statistic, 'encoding': policy['encoding'],
+                'scaling': 'standard' if isinstance(fitted.named_steps.get('scaler'), StandardScaler) else 'minmax' if 'scaler' in fitted.named_steps else 'none',
+                'ordinal_categories': list(encoder.categories_[i]) if metadata['kind'] == 'ordinal' else None,
+                'unknown_test_values': unknown,
+            })
+    names = preprocessor.get_feature_names_out().tolist()
+    return {
+        'original_predictors': config.predictors,
+        'used_predictors': config.active_predictors(),
+        'discarded_predictors': [{'variable': name, 'reason': 'Excluido explícitamente en preprocesamiento'} for name in config.predictors if name not in config.active_predictors()],
+        'transformations': rows, 'feature_count': len(names), 'feature_names': names,
+        'excluded_target': excluded_target,
+    }, notes

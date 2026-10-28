@@ -1,4 +1,4 @@
-# ML Workbench · v0.3
+# ML Workbench · v0.3.1
 
 Aplicación para explorar datasets CSV localmente. React, TypeScript estricto, Vite, Tailwind CSS y Recharts. El EDA funciona localmente sin backend. La sección Modelos conecta opcionalmente con FastAPI y scikit-learn: solo al pulsar Entrenar se envía el dataset completo al backend configurado. No requiere cuentas ni base de datos y no guarda datasets o modelos permanentemente.
 
@@ -42,6 +42,14 @@ El preprocesamiento se construye con ColumnTransformer y Pipeline: primero se ha
 Para iniciar FastAPI, crear el entorno Python en Windows y conectar Vite mediante **VITE_API_URL**, consulta [backend/README.md](backend/README.md). El archivo [frontend/.env.example](frontend/.env.example) contiene la configuración de desarrollo sin credenciales. No hay dirección local fija de respaldo en el código. Si no configuras la API, el asistente explica cómo hacerlo y mantiene deshabilitado el envío. Si la API está detenida, se informa al intentar entrenar; el EDA local no depende de ella.
 
 El dataset completo se serializa como CSV y la configuración como JSON en una petición multipart, solo al pulsar **Entrenar**. Se mantienen los mismos límites de carga y se verifican de nuevo en el servidor. No se transmiten páginas aisladas ni muestras de visualización. No hay autenticación, persistencia, AutoML, cola de trabajos ni descarga de modelos. Desarrollo local: un entrenamiento simultáneo por proceso. Las instrucciones y pruebas contra fuga de información se detallan en el README del backend.
+
+## Revisión del ML guiado (v0.3.1)
+
+La evaluación muestra accuracy en porcentaje con dos decimales y el resto de métricas con cuatro. Los valores internos conservan su precisión y las tarjetas no aplicables se ocultan. La clase positiva se elige explícitamente en binaria, con métricas positivas, macro, sensibilidad, especificidad y ROC-AUC. Multiclase incorpora métricas por clase y support. La matriz de confusión es un mapa de calor absoluto o normalizado por fila real. Los gráficos de regresión incorporan y=x, escalas comparables, valores negativos y residuos real menos predicción con referencia cero.
+
+El paso 3 conserva los valores predeterminados por grupo y permite ajustes por variable: imputación/escalado numérico, One-Hot o exclusión nominal, One-Hot/ordinal explícito/exclusión ordinal. Se exige confirmar el orden y nunca se aplica ordinal automáticamente a nominales. Todo se sigue ajustando exclusivamente en train. Los resultados incluyen las transformaciones realmente ejecutadas, descartes, características finales y nombres de salida del pipeline.
+
+Se actualiza scikit-learn a 1.7.2 y se fija SciPy 1.17.1 para eliminar el aviso obsoleto de iprint sin ocultar otras advertencias. **Reinstala las dependencias del backend y reinícialo**; el cliente comprueba la versión 0.3.1 del contrato. El README del backend documenta el origen del aviso y el entorno aislado de validación, ya que backend/.venv apunta a un Python del sistema ausente. No se han añadido AutoML, cross-validation ni persistencia.
 
 ## Uso y límites
 

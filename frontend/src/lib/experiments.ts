@@ -13,6 +13,7 @@ export const MODELS: { id: ModelId; name: string; task: Task }[] = [
 ];
 export const suggestTask = (role?: StatisticalRole): Task => role === 'Numérica' ? 'regression' : 'classification';
 export const defaultModel = (task: Task): ModelId => task === 'classification' ? 'logistic_regression' : 'linear_regression';
+export const activePredictors = (config: ExperimentConfig) => config.predictors.filter(name => config.preprocessing.variables?.[name]?.encoding !== 'exclude');
 export function defaultPredictors(dataset: Dataset, target: string, excluded: readonly string[] = []): string[] {
   return dataset.columns.filter(c => c.name !== target && c.role !== 'Identificador' && !excluded.includes(c.name)).map(c => c.name);
 }
@@ -38,12 +39,23 @@ export function targetSummary(dataset: Dataset, target: string, testSize: number
 export function validateExperiment(dataset: Dataset, config: ExperimentConfig): string[] {
   const errors = targetSummary(dataset, config.target, config.test_size, config.task).errors;
   if (!config.predictors.length) errors.push('Selecciona al menos un predictor.');
+  if (!activePredictors(config).length) errors.push('Debe quedar al menos un predictor tras las exclusiones de preprocesamiento.');
   if (config.predictors.includes(config.target)) errors.push('El objetivo no puede ser predictor de sí mismo.');
   if (config.predictors.some(name => !dataset.headers.includes(name))) errors.push('Algún predictor no pertenece al dataset.');
   if (new Set(config.predictors).size !== config.predictors.length) errors.push('Hay predictores repetidos.');
   if (!Number.isFinite(config.test_size) || config.test_size < .1 || config.test_size > .4) errors.push('El porcentaje de test debe estar entre 10 % y 40 %.');
   if (!Number.isInteger(config.seed) || config.seed < 0 || config.seed > 4294967295) errors.push('La semilla debe ser un entero entre 0 y 4294967295.');
   if (!MODELS.some(model => model.id === config.model && model.task === config.task)) errors.push('El modelo no es compatible con el problema.');
+  const classes = targetSummary(dataset, config.target, config.test_size, config.task).counts;
+  if (config.positive_class != null && (config.task !== 'classification' || classes.size !== 2 || !classes.has(config.positive_class))) errors.push('La clase positiva debe pertenecer al objetivo binario.');
+  for (const name of config.predictors) {
+    const settings = config.preprocessing.variables?.[name];
+    if (settings?.encoding === 'ordinal') {
+      if (config.roles[name] !== 'Categórica ordinal') errors.push(`«${name}»: Ordinal Encoding requiere un rol ordinal explícito.`);
+      if (!settings.ordinal_categories?.length || new Set(settings.ordinal_categories).size !== settings.ordinal_categories.length || settings.ordinal_categories.some(v => !v.trim())) errors.push(`«${name}»: confirma un orden ordinal sin duplicados ni categorías vacías.`);
+    }
+    if (config.roles[name] === 'Numérica' && (settings?.encoding === 'ordinal' || settings?.encoding === 'onehot')) errors.push(`«${name}»: revisa su rol antes de aplicar codificación categórica.`);
+  }
   return errors;
 }
 export function experimentForm(dataset: Dataset, config: ExperimentConfig): FormData {
@@ -74,5 +86,6 @@ export async function runExperiment(baseUrl: string, dataset: Dataset, config: E
     throw new Error(typeof detail === 'string' ? detail : `La API rechazó el experimento (HTTP ${response.status}). Revisa la configuración.`);
   }
   if (!body || typeof body !== 'object' || !('evaluation_scope' in body) || body.evaluation_scope !== 'test' || !('metrics' in body) || !('sizes' in body)) throw new Error('La API devolvió resultados con un formato inesperado.');
+  if (!('api_version' in body) || body.api_version !== '0.3.1') throw new Error('El backend no corresponde a la versión 0.3.1. Actualiza sus dependencias y reinicia FastAPI.');
   return body as ExperimentResult;
 }

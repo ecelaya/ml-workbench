@@ -75,6 +75,40 @@ def test_evaluation_failure_and_identifier_selection_are_clear(client, base_conf
     assert any('selección explícita' in message for message in response.json()['warnings'])
 
 
+def test_repeatable_api_and_fitted_report_are_consistent(client, base_config):
+    base_config.positive_class = '0'
+    a = post_csv(client, toy_csv(), base_config).json()
+    b = post_csv(client, toy_csv(), base_config).json()
+    assert a['api_version'] == '0.3.1'
+    for key in ['metrics', 'confusion_matrix', 'confusion_matrix_normalized', 'class_metrics', 'pipeline_summary']:
+        assert a[key] == b[key]
+    assert a['positive_class'] == '0'
+    assert len(a['pipeline_summary']['feature_names']) == a['pipeline_summary']['feature_count']
+    assert sum(row['support'] for row in a['class_metrics']) == a['sizes']['test']
+    assert all(sum(row) == pytest.approx(1) for row in a['confusion_matrix_normalized'])
+
+
+def test_invalid_positive_class_and_explicit_exclusions(client, base_config):
+    base_config.positive_class = 'not-observed'
+    assert post_csv(client, toy_csv(), base_config).status_code == 422
+    raw = base_config.model_dump()
+    raw['positive_class'] = '0'
+    raw['preprocessing']['variables'] = {'category': {'encoding': 'exclude'}}
+    config = ExperimentConfig.model_validate(raw)
+    response = post_csv(client, toy_csv(), config)
+    assert response.status_code == 200
+    assert response.json()['pipeline_summary']['used_predictors'] == ['x']
+
+
+def test_event_name_warning_does_not_block_training(client, base_config):
+    base_config.predictors = ['post_event', 'category']
+    base_config.roles['post_event'] = 'Numérica'
+    text = toy_csv().replace('x,category,target', 'post_event,category,target')
+    response = post_csv(client, text, base_config)
+    assert response.status_code == 200
+    assert any('no un bloqueo' in warning for warning in response.json()['warnings'])
+
+
 def test_literal_na_is_not_missing_and_utf8_validation():
     assert read_csv_bytes(b'x,target\nNA,1').loc[0, 'x'] == 'NA'
     with pytest.raises(DataError): read_csv_bytes(b'\xff')

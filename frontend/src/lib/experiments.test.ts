@@ -71,8 +71,18 @@ test('solo la llamada de entrenamiento envía el dataset completo a la URL confi
     const form = init?.body; assert.ok(form instanceof FormData);
     const file = form.get('file'); assert.ok(file instanceof Blob);
     rows = Papa.parse(await file.text()).data.length - 1;
-    return new Response(JSON.stringify({ evaluation_scope: 'test', metrics: { accuracy: .5 }, sizes: { received: 50 } }));
+    return new Response(JSON.stringify({ api_version: '0.3.1', evaluation_scope: 'test', metrics: { accuracy: .5 }, sizes: { received: 50 } }));
   };
   const result = await runExperiment('https://api.example/', dataset, settings, new AbortController().signal);
   assert.equal(requested, 'https://api.example/api/experiments'); assert.equal(rows, 50); assert.equal(result.metrics.accuracy, .5);
+});
+test('valida exclusiones, clase positiva y orden ordinal sin convertir nominales implícitamente', () => {
+  const dataset = fixture(), settings = config(dataset);
+  assert.ok(validateExperiment(dataset, { ...settings, positive_class: 'unknown' }).some(e => e.includes('clase positiva')));
+  assert.ok(validateExperiment(dataset, { ...settings, preprocessing: { ...settings.preprocessing, variables: { amount: { encoding: 'exclude' }, category: { encoding: 'exclude' } } } }).some(e => e.includes('exclusiones')));
+  const ordinal = { ...settings, preprocessing: { ...settings.preprocessing, variables: { category: { encoding: 'ordinal' as const, ordinal_categories: ['a', 'b'] } } } };
+  assert.ok(validateExperiment(dataset, ordinal).some(e => e.includes('rol ordinal')));
+  const allowed = { ...ordinal, roles: { ...ordinal.roles, category: 'Categórica ordinal' as const } };
+  assert.deepEqual(validateExperiment(dataset, allowed), []);
+  assert.ok(validateExperiment(dataset, { ...allowed, preprocessing: { ...allowed.preprocessing, variables: { category: { encoding: 'ordinal', ordinal_categories: ['a', 'a'] } } } }).some(e => e.includes('orden ordinal')));
 });

@@ -74,7 +74,7 @@ def prepare_data(frame: pd.DataFrame, config: ExperimentConfig) -> PreparedData:
     target = frame[config.target]
     keep = target.notna()
     warnings = []
-    X = frame.loc[keep, config.predictors].copy()
+    X = frame.loc[keep, config.active_predictors()].copy()
     y = target.loc[keep].copy()
     if len(y) < 10:
         raise DataError('Se necesitan al menos 10 registros con objetivo no ausente.')
@@ -87,13 +87,19 @@ def prepare_data(frame: pd.DataFrame, config: ExperimentConfig) -> PreparedData:
             raise DataError('Clasificación requiere al menos dos clases en el objetivo.')
         if len(counts) > MAX_CLASSES:
             raise DataError('El objetivo tiene más de 100 clases. Revisa si es un identificador o una regresión.')
-    for name in config.predictors:
+        if config.positive_class is not None and (len(counts) != 2 or config.positive_class not in counts.index):
+            raise DataError('La clase positiva debe ser una de las dos clases observadas del objetivo binario.')
+    for name in config.active_predictors():
         if config.roles[name] == 'Numérica':
             X[name] = numeric_series(X[name], name)
         if config.roles[name] == 'Identificador':
             warnings.append(f'Identificador «{name}» incluido por selección explícita; se codifica como categoría.')
-    if config.target in ('survived', 'Survived') and any(name in config.predictors for name in ('boat', 'body')):
+    if config.target in ('survived', 'Survived') and any(name in config.active_predictors() for name in ('boat', 'body')):
         warnings.append('boat/body pueden describir hechos posteriores al desenlace. Exclúyelos si el objetivo es predecir supervivencia antes del evento.')
+    for name in config.active_predictors():
+        tokens = re.sub(r'([a-z])([A-Z])', r'\1_\2', name).lower().split('_')
+        if set(tokens) & {'after', 'post', 'posterior', 'outcome', 'discharge', 'death'}:
+            warnings.append(f'«{name}» podría contener información del desenlace o posterior al evento. Es una señal orientativa por el nombre, no un bloqueo; revisa su disponibilidad al predecir.')
     return PreparedData(X, y, int((~keep).sum()), warnings)
 
 

@@ -10,7 +10,7 @@ from .schemas import ExperimentConfig
 from .training import train_experiment
 from .validation import DataError, MAX_BYTES
 
-app = FastAPI(title='ML Workbench API', version='0.3.0')
+app = FastAPI(title='ML Workbench API', version='0.3.1')
 app.add_middleware(CORSMiddleware, allow_origins=[
     'http://localhost:5173', 'http://127.0.0.1:5173',
     'http://localhost:5174', 'http://127.0.0.1:5174',
@@ -20,7 +20,7 @@ training_lock = threading.Lock()
 
 @app.get('/health')
 def health():
-    return {'status': 'ok', 'version': '0.3.0'}
+    return {'status': 'ok', 'version': '0.3.1'}
 
 
 @app.post('/api/experiments')

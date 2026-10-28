@@ -8,11 +8,28 @@ CLASSIFIERS = {'logistic_regression', 'decision_tree_classifier', 'random_forest
 REGRESSORS = {'linear_regression', 'decision_tree_regressor', 'random_forest_regressor'}
 
 
+class VariablePreprocessing(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    encoding: Literal['onehot', 'ordinal', 'exclude'] | None = None
+    numeric_imputation: Literal['mean', 'median'] | None = None
+    scaling: Literal['standard', 'minmax', 'none'] | None = None
+    categorical_imputation: Literal['most_frequent', 'constant'] | None = None
+    ordinal_categories: list[str] | None = Field(default=None, min_length=1, max_length=2000)
+
+    @model_validator(mode='after')
+    def unique_order(self):
+        if self.ordinal_categories is not None:
+            if len(set(self.ordinal_categories)) != len(self.ordinal_categories) or any(not value.strip() for value in self.ordinal_categories):
+                raise ValueError('El orden ordinal debe contener categorías no vacías y sin duplicados.')
+        return self
+
+
 class PreprocessingConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
     numeric_imputation: Literal['mean', 'median'] = 'median'
     scaling: Literal['standard', 'minmax', 'none'] = 'standard'
     categorical_imputation: Literal['most_frequent', 'constant'] = 'most_frequent'
+    variables: dict[str, VariablePreprocessing] = Field(default_factory=dict, max_length=200)
 
 
 class ExperimentConfig(BaseModel):
@@ -26,6 +43,11 @@ class ExperimentConfig(BaseModel):
     seed: int = Field(default=42, ge=0, le=4294967295)
     stratify: bool = True
     preprocessing: PreprocessingConfig = Field(default_factory=PreprocessingConfig)
+    positive_class: str | None = Field(default=None, max_length=1000)
+    target_units: str | None = Field(default=None, max_length=100)
+
+    def active_predictors(self):
+        return [name for name in self.predictors if not self.preprocessing.variables.get(name) or self.preprocessing.variables[name].encoding != 'exclude']
 
     @model_validator(mode='after')
     def consistent(self):
@@ -37,4 +59,13 @@ class ExperimentConfig(BaseModel):
             raise ValueError('Falta el rol de alguna variable seleccionada.')
         if self.model not in (CLASSIFIERS if self.task == 'classification' else REGRESSORS):
             raise ValueError('El modelo no es compatible con el tipo de problema.')
+        for name, settings in self.preprocessing.variables.items():
+            if name not in self.roles:
+                raise ValueError(f'La configuración de «{name}» no corresponde a una variable conocida.')
+            if settings.encoding == 'ordinal' and (self.roles[name] != 'Categórica ordinal' or not settings.ordinal_categories):
+                raise ValueError('Ordinal Encoding requiere rol ordinal y un orden explícito no vacío.')
+            if self.roles[name] == 'Numérica' and settings.encoding in ('onehot', 'ordinal'):
+                raise ValueError('Una variable numérica no admite codificación categórica sin corregir antes su rol.')
+        if not self.active_predictors():
+            raise ValueError('Debe quedar al menos un predictor después de las exclusiones.')
         return self

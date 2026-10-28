@@ -10,6 +10,7 @@ export interface SampleDataset {
   problem: 'Clasificación binaria' | 'Clasificación multiclase' | 'Regresión';
   target: string;
   targetDescription: string;
+  targetUnits?: string;
   version: string;
   source: string;
   sourceUrl: string;
@@ -45,6 +46,7 @@ export const SAMPLE_DATASETS: readonly SampleDataset[] = [
     id: 'california-housing', name: 'California Housing', description: 'Grupos censales de California de 1990. Ocho medidas y el valor mediano de vivienda.',
     filename: 'california-housing.csv', rows: 20640, columns: 9, predictors: 8, identifiers: 0,
     problem: 'Regresión', target: 'MedHouseVal', targetDescription: 'Valor mediano de vivienda en unidades de 100.000 USD.',
+    targetUnits: '100.000 USD',
     version: 'Mendeley hhb6nwfft8 · v1 · 2026-09-03', source: 'Mendeley Data / scikit-learn / StatLib',
     sourceUrl: 'https://doi.org/10.17632/hhb6nwfft8.1', authors: 'Vrushali Deshpande (exportación, 2026); R. Kelley Pace y Ronald Barry (1997).',
     license: 'CC BY 4.0 según el depósito v1', licenseUrl: ccBy,
