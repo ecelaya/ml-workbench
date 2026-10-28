@@ -5,6 +5,7 @@ from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import MinMaxScaler, OneHotEncoder, OrdinalEncoder, StandardScaler
 
+from .config import MAX_TRAIN_CELLS, MAX_DENSE_CELLS
 from .schemas import ExperimentConfig, VariablePreprocessing
 from .validation import DataError, MAX_CATEGORIES, MAX_ENCODED_FEATURES
 
@@ -23,6 +24,11 @@ def variable_policy(config: ExperimentConfig, name: str):
 
 def build_preprocessor(X_train: pd.DataFrame, config: ExperimentConfig):
     """Group equivalent policies; inspect only train, then fit inside Pipeline."""
+    if X_train.shape[0] * X_train.shape[1] > MAX_TRAIN_CELLS:
+        raise DataError('Demasiadas celdas de entrenamiento. Reduce filas o predictores.')
+    dense_count = sum(variable_policy(config, name)['encoding'] != 'onehot' for name in config.active_predictors())
+    if len(X_train) * dense_count > MAX_DENSE_CELLS:
+        raise DataError('La matriz supera el presupuesto de celdas densas.')
     groups = {}
     notes = []
     estimated = 0
@@ -38,7 +44,7 @@ def build_preprocessor(X_train: pd.DataFrame, config: ExperimentConfig):
             notes.append(f'«{name}» es constante entre los valores válidos de train.')
         if not numeric:
             if unique > MAX_CATEGORIES:
-                raise DataError(f'«{name}» supera 2.000 categorías en entrenamiento. Exclúyela o revisa su rol.')
+                raise DataError(f'«{name}» supera {MAX_CATEGORIES:,} categorías en entrenamiento. Exclúyela o revisa su rol.'.replace(',', '.'))
             if unique > 50:
                 notes.append(f'«{name}» tiene alta cardinalidad en train ({unique} categorías).')
             if policy['encoding'] == 'ordinal':
@@ -51,7 +57,7 @@ def build_preprocessor(X_train: pd.DataFrame, config: ExperimentConfig):
         key = (kind, policy['imputation'], policy['scaling'], tuple(policy['order'] or []))
         groups.setdefault(key, []).append(name)
     if estimated > MAX_ENCODED_FEATURES:
-        raise DataError('La codificación podría superar 10.000 columnas. Selecciona menos predictores categóricos.')
+        raise DataError(f'La codificación podría superar {MAX_ENCODED_FEATURES:,} columnas. Selecciona menos predictores categóricos.'.replace(',', '.'))
     transformers, metadata, counters = [], {}, {}
     for (kind, strategy, scaling, order), columns in groups.items():
         number = counters.get(kind, 0)

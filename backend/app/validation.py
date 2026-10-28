@@ -2,6 +2,7 @@ import csv
 import io
 import math
 import re
+from pathlib import Path
 from dataclasses import dataclass
 
 import numpy as np
@@ -10,17 +11,10 @@ from sklearn.model_selection import train_test_split
 
 from .schemas import ExperimentConfig
 
-MAX_BYTES = 10 * 1024 * 1024
-MAX_ROWS = 100_000
-MAX_COLUMNS = 200
-MAX_CLASSES = 100
-MAX_CATEGORIES = 2000
-MAX_ENCODED_FEATURES = 10_000
+from .config import MAX_BYTES, MAX_ROWS, MAX_COLUMNS, MAX_CLASSES, MAX_CATEGORIES, MAX_ENCODED_FEATURES, MAX_INPUT_CELLS
+from .errors import DataError
+
 NUMBER = re.compile(r'^[+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?$', re.I)
-
-
-class DataError(ValueError):
-    """Actionable validation failure, safe to return to the user."""
 
 
 def numeric_series(series: pd.Series, name: str) -> pd.Series:
@@ -35,21 +29,35 @@ def numeric_series(series: pd.Series, name: str) -> pd.Series:
 
 def read_csv_bytes(content: bytes) -> pd.DataFrame:
     if not content or len(content) > MAX_BYTES:
-        raise DataError('El CSV debe tener contenido y no superar 10 MiB.')
+        raise DataError(f'El CSV debe tener contenido y no superar {MAX_BYTES} bytes.')
+    return read_csv_stream(io.TextIOWrapper(io.BytesIO(content), encoding='utf-8-sig', newline=''))
+
+
+def read_csv_file(path: Path) -> pd.DataFrame:
+    if not path.stat().st_size or path.stat().st_size > MAX_BYTES:
+        raise DataError('El CSV está vacío o supera el tamaño máximo permitido.')
+    with path.open(encoding='utf-8-sig', newline='') as stream:
+        return read_csv_stream(stream)
+
+
+def read_csv_stream(stream) -> pd.DataFrame:
     try:
-        text = content.decode('utf-8-sig', errors='strict')
-        if '\x00' in text:
-            raise DataError('El archivo debe ser texto CSV UTF-8 sin bytes nulos.')
-        reader = csv.reader(io.StringIO(text, newline=''), strict=True)
+        reader = csv.reader(stream, strict=True)
         headers = next(reader)
         if not headers or len(headers) > MAX_COLUMNS or any(not h.strip() for h in headers) or len(set(headers)) != len(headers):
-            raise DataError('Cabeceras vacías, repetidas o más de 200 columnas.')
+            raise DataError(f'Cabeceras vacías, repetidas o más de {MAX_COLUMNS} columnas.')
+        if any('\x00' in h for h in headers):
+            raise DataError('El CSV contiene bytes nulos.')
         rows = []
         for row in reader:
+            if any('\x00' in cell for cell in row):
+                raise DataError('El CSV contiene bytes nulos.')
             if len(row) != len(headers):
                 raise DataError(f'La fila {len(rows) + 1} no coincide con la cabecera.')
             if len(rows) >= MAX_ROWS:
-                raise DataError('Se supera el límite de 100.000 filas.')
+                raise DataError(f'Se supera el límite de {MAX_ROWS:,} filas.'.replace(',', '.'))
+            if (len(rows) + 1) * len(headers) > MAX_INPUT_CELLS:
+                raise DataError('El CSV supera el presupuesto de celdas. Reduce filas o columnas.')
             # Preserve numeric-looking categorical codes and identifiers as text.
             # NA/NULL are literal values, as in the browser's default policy.
             rows.append([np.nan if not cell.strip() else cell for cell in row])
@@ -86,7 +94,7 @@ def prepare_data(frame: pd.DataFrame, config: ExperimentConfig) -> PreparedData:
         if len(counts) < 2:
             raise DataError('Clasificación requiere al menos dos clases en el objetivo.')
         if len(counts) > MAX_CLASSES:
-            raise DataError('El objetivo tiene más de 100 clases. Revisa si es un identificador o una regresión.')
+            raise DataError(f'El objetivo tiene más de {MAX_CLASSES} clases. Revisa su rol.')
         if config.positive_class is not None and (len(counts) != 2 or config.positive_class not in counts.index):
             raise DataError('La clase positiva debe ser una de las dos clases observadas del objetivo binario.')
     for name in config.active_predictors():

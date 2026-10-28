@@ -1,5 +1,7 @@
 from typing import Literal
 
+from .config import MAX_COLUMNS, MAX_CATEGORIES
+
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 Role = Literal['Numérica', 'Categórica nominal', 'Categórica ordinal', 'Identificador']
@@ -14,7 +16,7 @@ class VariablePreprocessing(BaseModel):
     numeric_imputation: Literal['mean', 'median'] | None = None
     scaling: Literal['standard', 'minmax', 'none'] | None = None
     categorical_imputation: Literal['most_frequent', 'constant'] | None = None
-    ordinal_categories: list[str] | None = Field(default=None, min_length=1, max_length=2000)
+    ordinal_categories: list[str] | None = Field(default=None, min_length=1, max_length=MAX_CATEGORIES)
 
     @model_validator(mode='after')
     def unique_order(self):
@@ -29,14 +31,14 @@ class PreprocessingConfig(BaseModel):
     numeric_imputation: Literal['mean', 'median'] = 'median'
     scaling: Literal['standard', 'minmax', 'none'] = 'standard'
     categorical_imputation: Literal['most_frequent', 'constant'] = 'most_frequent'
-    variables: dict[str, VariablePreprocessing] = Field(default_factory=dict, max_length=200)
+    variables: dict[str, VariablePreprocessing] = Field(default_factory=dict, max_length=MAX_COLUMNS)
 
 
 class ExperimentConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
     target: str = Field(min_length=1, max_length=500)
-    predictors: list[str] = Field(min_length=1, max_length=200)
-    roles: dict[str, Role] = Field(max_length=200)
+    predictors: list[str] = Field(min_length=1, max_length=MAX_COLUMNS)
+    roles: dict[str, Role] = Field(max_length=MAX_COLUMNS)
     task: Task
     model: Literal['logistic_regression', 'decision_tree_classifier', 'random_forest_classifier', 'linear_regression', 'decision_tree_regressor', 'random_forest_regressor']
     test_size: float = Field(default=.2, ge=.1, le=.4, allow_inf_nan=False)
