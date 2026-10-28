@@ -1,6 +1,6 @@
-# ML Workbench · v0.2.2
+# ML Workbench · v0.3.1
 
-Aplicación para explorar datasets CSV localmente. React, TypeScript estricto, Vite, Tailwind CSS y Recharts. No requiere cuentas, APIs, base de datos ni backend. No se envían archivos a ningún servidor y no se guardan en almacenamiento persistente: al recargar la página se descartan.
+Aplicación para explorar datasets CSV localmente. React, TypeScript estricto, Vite, Tailwind CSS y Recharts. El EDA funciona localmente sin backend. La sección Modelos conecta opcionalmente con FastAPI y scikit-learn: solo al pulsar Entrenar se envía el dataset completo al backend configurado. No requiere cuentas ni base de datos y no guarda datasets o modelos permanentemente.
 
 ## Estructura
 
@@ -10,7 +10,7 @@ frontend/
     components/   # Carga, métricas, tabla paginada y perfil gráfico
     lib/          # Parsing y detección básica de tipos
     types/        # Contratos de datos
-backend/          # Reservado para FastAPI en versiones futuras
+backend/          # API FastAPI, validación, pipelines y pruebas
 ```
 
 ## Ejecutar
@@ -33,17 +33,35 @@ npm run preview
 
 El build genera `frontend/dist/`. Para instalaciones reproducibles usa `npm ci` con el lockfile incluido.
 
+## Modelos supervisados (v0.3)
+
+La sección **Modelos** contiene un asistente de cuatro pasos: objetivo y predictores, train/test, preprocesamiento y entrenamiento. Permite clasificación binaria/multiclase y regresión con seis estimadores de scikit-learn. Mantiene los roles del EDA, excluye identificadores por defecto, muestra targets ausentes y permite corregir el problema. Para Titanic se excluyen inicialmente boat/body por información posterior al objetivo.
+
+El preprocesamiento se construye con ColumnTransformer y Pipeline: primero se hace el split y luego se ajustan imputadores, codificadores y escaladores exclusivamente con train. Las métricas y gráficos de resultados corresponden a test, sin selección automática de hiperparámetros. Se muestran configuración ejecutada, tamaños reales y avisos. Los cambios de configuración invalidan el resultado mostrado; cambiar de dataset reinicia el asistente.
+
+Para iniciar FastAPI, crear el entorno Python en Windows y conectar Vite mediante **VITE_API_URL**, consulta [backend/README.md](backend/README.md). El archivo [frontend/.env.example](frontend/.env.example) contiene la configuración de desarrollo sin credenciales. No hay dirección local fija de respaldo en el código. Si no configuras la API, el asistente explica cómo hacerlo y mantiene deshabilitado el envío. Si la API está detenida, se informa al intentar entrenar; el EDA local no depende de ella.
+
+El dataset completo se serializa como CSV y la configuración como JSON en una petición multipart, solo al pulsar **Entrenar**. Se mantienen los mismos límites de carga y se verifican de nuevo en el servidor. No se transmiten páginas aisladas ni muestras de visualización. No hay autenticación, persistencia, AutoML, cola de trabajos ni descarga de modelos. Desarrollo local: un entrenamiento simultáneo por proceso. Las instrucciones y pruebas contra fuga de información se detallan en el README del backend.
+
+## Revisión del ML guiado (v0.3.1)
+
+La evaluación muestra accuracy en porcentaje con dos decimales y el resto de métricas con cuatro. Los valores internos conservan su precisión y las tarjetas no aplicables se ocultan. La clase positiva se elige explícitamente en binaria, con métricas positivas, macro, sensibilidad, especificidad y ROC-AUC. Multiclase incorpora métricas por clase y support. La matriz de confusión es un mapa de calor absoluto o normalizado por fila real. Los gráficos de regresión incorporan y=x, escalas comparables, valores negativos y residuos real menos predicción con referencia cero.
+
+El paso 3 conserva los valores predeterminados por grupo y permite ajustes por variable: imputación/escalado numérico, One-Hot o exclusión nominal, One-Hot/ordinal explícito/exclusión ordinal. Se exige confirmar el orden y nunca se aplica ordinal automáticamente a nominales. Todo se sigue ajustando exclusivamente en train. Los resultados incluyen las transformaciones realmente ejecutadas, descartes, características finales y nombres de salida del pipeline.
+
+Se actualiza scikit-learn a 1.7.2 y se fija SciPy 1.17.1 para eliminar el aviso obsoleto de iprint sin ocultar otras advertencias. **Reinstala las dependencias del backend y reinícialo**; el cliente comprueba la versión 0.3.1 del contrato. El README del backend documenta el origen del aviso y el entorno aislado de validación, ya que backend/.venv apunta a un Python del sistema ausente. No se han añadido AutoML, cross-validation ni persistencia.
+
 ## Uso y límites
 
 ### Datasets de ejemplo
 
-La carga de archivos propios sigue siendo la acción principal. **Explorar dataset de ejemplo** despliega un catálogo de Titanic, Iris, California Housing, Wine, Breast Cancer Wisconsin Diagnostic y Palmer Penguins. Cada ficha muestra descripción, registros, columnas totales, problema, objetivo sugerido, versión y atribución. Un clic carga el CSV estático usando exactamente el mismo `File → parseCsv → análisis` que un archivo propio. Puedes descargar el CSV del ejemplo, cambiar entre ejemplos y archivos personales y corregir los roles manualmente. El nombre del ejemplo activo y su objetivo sugerido aparecen sobre el resumen. No se entrena ningún modelo.
+La carga de archivos propios sigue siendo la acción principal. **Explorar dataset de ejemplo** despliega un catálogo de Titanic, Iris, California Housing, Wine, Breast Cancer Wisconsin Diagnostic y Palmer Penguins. Cada ficha muestra descripción, registros, columnas totales, problema, objetivo sugerido, versión y atribución. Un clic carga el CSV estático usando exactamente el mismo `File → parseCsv → análisis` que un archivo propio. Puedes descargar el CSV del ejemplo, cambiar entre ejemplos y archivos personales y corregir los roles manualmente. El nombre del ejemplo activo y su objetivo sugerido aparecen sobre el resumen. Cargar o explorar un ejemplo no entrena modelos automáticamente.
 
 Los archivos completos están en `frontend/public/datasets/`; el catálogo tipado está en `frontend/src/data/sampleDatasets.ts`. Las [fuentes, versiones, licencias, cambios y SHA-256](frontend/public/datasets/SOURCES.md) identifican cada copia. Titanic es OpenML v1 completo (1309 filas), no el train de Kaggle de 891 filas. California Housing es la exportación versionada de scikit-learn de 20640 filas y 9 columnas. El total de columnas incluye el objetivo y, en WDBC, el ID original.
 
 Al cargar correctamente un nuevo dataset se incrementa la revisión del dataset: se reinician roles, orden ordinal, selecciones, gráficos, paginaciones y filtros dependientes del anterior. Si la descarga o validación falla se conserva el dataset anterior. La carga impide operaciones concurrentes. Los ejemplos no modifican el parser ni los cálculos del EDA.
 
-Los CSV se sirven desde el propio frontend, mediante rutas que respetan el `BASE_URL` de Vite. Vercel los copia automáticamente a `dist/datasets/`; no requieren backend, claves ni llamadas a servicios de terceros. No se descargan durante el build. Solo se obtiene por HTTP el ejemplo elegido; el parsing y análisis siguen siendo locales y los archivos personales no se transmiten. Se necesita el servidor local o el host Vercel para servir los assets; no se añade un modo offline ni persistencia.
+Los CSV se sirven desde el propio frontend, mediante rutas que respetan el `BASE_URL` de Vite. Vercel los copia automáticamente a `dist/datasets/`; no requieren backend, claves ni llamadas a servicios de terceros para cargar y explorar. No se descargan durante el build. Solo se obtiene por HTTP el ejemplo elegido; el parsing y EDA siguen siendo locales. Los archivos personales solo se transmiten al backend configurado al solicitar entrenamiento. Se necesita el servidor local o el host Vercel para servir los assets; no se añade un modo offline ni persistencia.
 
 Las pruebas verifican los seis archivos íntegros, sus huellas y dimensiones, los límites de carga y el flujo real de `parseCsv(File)`, así como recuentos del objetivo y estadísticos sobre todas las filas. Palmer Penguins conserva el CSV oficial de 344 filas y 8 columnas, con objetivo `species` y licencia de datos CC0. Sus 19 marcadores `NA` originales se interpretan como ausencias solo al cargar ese ejemplo, mediante configuración explícita del catálogo; la descarga conserva los marcadores y los archivos propios mantienen la política habitual de `NA` como texto. No se imputan ausencias ni se eliminan filas. Los detalles de reproducción figuran en `SOURCES.md`.
 
@@ -98,6 +116,6 @@ Solo se consideran ausentes campos vacíos o con espacios, reutilizando `isMissi
 1. Sube este monorepositorio a tu proveedor Git e impórtalo en Vercel.
 2. Selecciona `frontend` como **Root Directory** y **Vite** como preset.
 3. Usa `npm run build` como Build Command y `dist` como Output Directory. Conserva la instalación automática de npm y el acceso a los archivos de la raíz del monorepositorio para el lockfile/workspaces.
-4. Selecciona Node.js 22 o superior. No se necesitan variables de entorno ni funciones serverless.
+4. Selecciona Node.js 22 o superior. El EDA no necesita variables de entorno ni funciones serverless. Modelos utiliza VITE_API_URL si se conecta un backend.
 
-No hay rutas del servidor que requieran rewrites. El backend de FastAPI y su despliegue en Render quedan para futuras fases, junto con entrenamiento y comparación de modelos. No se ha desplegado esta versión automáticamente.
+No hay rutas del servidor que requieran rewrites. El frontend se puede compilar y desplegar aunque FastAPI no esté disponible. Configura VITE_API_URL en Vercel solo si tienes un backend accesible por HTTPS y añade su origen explícito en CORS del backend. Las instrucciones de desarrollo están en backend/README.md. El despliegue remoto y la comparación persistente de modelos quedan fuera de este MVP. No se ha desplegado automáticamente.

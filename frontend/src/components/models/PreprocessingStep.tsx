@@ -1,0 +1,36 @@
+import { useState } from 'react';
+import type { Dataset } from '../../types/dataset';
+import type { PreprocessingConfig, VariablePreprocessing } from '../../types/experiment';
+import { isMissing } from '../../lib/csv';
+import { Note, Panel } from '../eda/Shared';
+
+function OrdinalOrder({ values, confirmed, onConfirm }: { values: string[]; confirmed?: string[]; onConfirm: (order: string[]) => void }) {
+  const [draft, setDraft] = useState(() => confirmed ?? [...new Set(values.filter(value => !isMissing(value)))]);
+  const [page, setPage] = useState(0);
+  const pages = Math.max(1, Math.ceil(draft.length / 20));
+  function move(index: number, delta: number) {
+    const next = [...draft]; [next[index], next[index + delta]] = [next[index + delta]!, next[index]!]; setDraft(next);
+  }
+  if (draft.length > 2000) return <Note>Más de 2.000 categorías: revisa el rol o excluye esta variable.</Note>;
+  return <div className="ordinal-policy"><p>{confirmed ? 'Orden confirmado para este experimento.' : 'Orden provisional de aparición. Reordena de menor a mayor y confirma explícitamente antes de entrenar.'}</p><ol start={page * 20 + 1}>{draft.slice(page * 20, (page + 1) * 20).map((name, j) => { const i = page * 20 + j; return <li key={name}><span title={name}>{name}</span><div className="order-buttons"><button type="button" aria-label={`Subir ${name}`} disabled={i === 0} onClick={() => move(i, -1)}>↑</button><button type="button" aria-label={`Bajar ${name}`} disabled={i === draft.length - 1} onClick={() => move(i, 1)}>↓</button></div></li>; })}</ol>{pages > 1 && <div className="pagination"><span>Página {page + 1} de {pages}</span><div><button disabled={!page} onClick={() => setPage(page - 1)}>←</button><button disabled={page >= pages - 1} onClick={() => setPage(page + 1)}>→</button></div></div>}<button className="eda-action" disabled={!draft.length} onClick={() => onConfirm([...draft])}>Confirmar este orden</button><p>La edición solo se aplica al confirmar. Este orden es una decisión explícita, no se aprende de test. Valores desconocidos: −1, reservado fuera de los niveles; no representa un nuevo rango.</p></div>;
+}
+
+export function PreprocessingStep({ dataset, predictors, value, onChange }: { dataset: Dataset; predictors: string[]; value: PreprocessingConfig; onChange: (value: PreprocessingConfig) => void }) {
+  function override(name: string, patch: Partial<VariablePreprocessing>) {
+    onChange({ ...value, variables: { ...value.variables, [name]: { ...value.variables?.[name], ...patch } } });
+  }
+  return <div className="eda-stack"><Panel title="3. Configurar preprocesamiento" detail="Valores del grupo, con ajustes opcionales por variable. El ajuste se ejecuta solo con train."><div className="eda-controls"><label className="eda-field">Grupo numérico: imputación<select value={value.numeric_imputation} onChange={e => onChange({ ...value, numeric_imputation: e.target.value as PreprocessingConfig['numeric_imputation'] })}><option value="median">Mediana</option><option value="mean">Media</option></select></label><label className="eda-field">Grupo numérico: escalado<select value={value.scaling} onChange={e => onChange({ ...value, scaling: e.target.value as PreprocessingConfig['scaling'] })}><option value="standard">StandardScaler</option><option value="minmax">MinMaxScaler</option><option value="none">Sin escalado</option></select></label><label className="eda-field">Grupo categórico: imputación<select value={value.categorical_imputation} onChange={e => onChange({ ...value, categorical_imputation: e.target.value as PreprocessingConfig['categorical_imputation'] })}><option value="most_frequent">Moda de train</option><option value="constant">Categoría constante de ausencia</option></select></label></div><Note>Los ajustes de cada variable prevalecen sobre su grupo. La configuración no implica que una transformación ya se haya aplicado: los resultados mostrarán solo el pipeline ajustado. No se asigna un orden a categorías nominales.</Note></Panel>
+    <Panel title="Transformaciones por variable" detail="La exclusión afecta solo a este experimento; no elimina datos del EDA."><div className="variable-policy-grid">{predictors.map(name => {
+      const role = dataset.columns.find(c => c.name === name)?.role;
+      const settings = value.variables?.[name] ?? {};
+      const numeric = role === 'Numérica', excluded = settings.encoding === 'exclude';
+      const mode = excluded ? 'exclude' : numeric ? 'keep' : settings.encoding ?? 'onehot';
+      return <article className="variable-policy" key={name}><h3>{name}</h3><small>{role}</small><label className="eda-field">Tratamiento<select value={mode} onChange={e => override(name, { encoding: e.target.value === 'keep' ? undefined : e.target.value as VariablePreprocessing['encoding'] })}>{numeric ? <option value="keep">Conservar como numérica</option> : <option value="onehot">One-Hot Encoding</option>}{role === 'Categórica ordinal' && <option value="ordinal">Ordinal Encoding con orden explícito</option>}<option value="exclude">Excluir del entrenamiento</option></select></label>
+        {!excluded && (numeric ? <><label className="eda-field">Imputación<select value={settings.numeric_imputation ?? ''} onChange={e => override(name, { numeric_imputation: e.target.value ? e.target.value as VariablePreprocessing['numeric_imputation'] : undefined })}><option value="">Heredar del grupo</option><option value="mean">Media</option><option value="median">Mediana</option></select></label><label className="eda-field">Escalado<select value={settings.scaling ?? ''} onChange={e => override(name, { scaling: e.target.value ? e.target.value as VariablePreprocessing['scaling'] : undefined })}><option value="">Heredar del grupo</option><option value="standard">StandardScaler</option><option value="minmax">MinMaxScaler</option><option value="none">Sin escalado</option></select></label></> : <label className="eda-field">Imputación<select value={settings.categorical_imputation ?? ''} onChange={e => override(name, { categorical_imputation: e.target.value ? e.target.value as VariablePreprocessing['categorical_imputation'] : undefined })}><option value="">Heredar del grupo</option><option value="most_frequent">Moda de train</option><option value="constant">Categoría constante de ausencia</option></select></label>)}
+        {!excluded && mode === 'ordinal' && <OrdinalOrder values={dataset.rows.map(row => row[dataset.headers.indexOf(name)] ?? '')} confirmed={settings.ordinal_categories} onConfirm={order => override(name, { ordinal_categories: order })}/>}
+        {role === 'Identificador' && !excluded && <p className="policy-warning">Identificador incluido explícitamente. Revisa su capacidad de generalizar; se codifica por One-Hot.</p>}
+        {!excluded && mode === 'onehot' && <p>Las categorías desconocidas en test se representan con un vector de ceros. El vocabulario se aprende en train.</p>}
+        {excluded && <p>Descartada del pipeline. No se ajustará su imputación, codificación ni escalado.</p>}
+      </article>;
+    })}</div><Note>Las columnas vacías y constantes se conservan con avisos. Los límites de cardinalidad se evalúan solo en train. No se modifican valores originales ni se ajustan parámetros con test.</Note></Panel></div>;
+}

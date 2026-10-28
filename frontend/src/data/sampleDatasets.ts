@@ -10,6 +10,7 @@ export interface SampleDataset {
   problem: 'Clasificación binaria' | 'Clasificación multiclase' | 'Regresión';
   target: string;
   targetDescription: string;
+  targetUnits?: string;
   version: string;
   source: string;
   sourceUrl: string;
@@ -19,6 +20,7 @@ export interface SampleDataset {
   bytes: number;
   sha256: string;
   missingValueTokens?: readonly string[];
+  suggestedExcludedPredictors?: readonly string[];
 }
 const ccBy = 'https://creativecommons.org/licenses/by/4.0/';
 export const SAMPLE_DATASETS: readonly SampleDataset[] = [
@@ -30,6 +32,7 @@ export const SAMPLE_DATASETS: readonly SampleDataset[] = [
     sourceUrl: 'https://www.openml.org/d/40945', authors: 'Frank E. Harrell Jr. y Thomas Cason; fuentes históricas citadas en OpenML.',
     license: 'CC BY según condiciones OpenML; metadato original: «Public»', licenseUrl: 'https://www.openml.org/terms',
     bytes: 104320, sha256: '98919d5c63fefef712481a38acd0d154887c4d96280af2c834a921ea05d124ee',
+    suggestedExcludedPredictors: ['boat', 'body'],
   },
   {
     id: 'iris', name: 'Iris', description: 'Medidas de sépalos y pétalos de tres especies de iris, expresadas en centímetros.',
@@ -43,6 +46,7 @@ export const SAMPLE_DATASETS: readonly SampleDataset[] = [
     id: 'california-housing', name: 'California Housing', description: 'Grupos censales de California de 1990. Ocho medidas y el valor mediano de vivienda.',
     filename: 'california-housing.csv', rows: 20640, columns: 9, predictors: 8, identifiers: 0,
     problem: 'Regresión', target: 'MedHouseVal', targetDescription: 'Valor mediano de vivienda en unidades de 100.000 USD.',
+    targetUnits: '100.000 USD',
     version: 'Mendeley hhb6nwfft8 · v1 · 2026-09-03', source: 'Mendeley Data / scikit-learn / StatLib',
     sourceUrl: 'https://doi.org/10.17632/hhb6nwfft8.1', authors: 'Vrushali Deshpande (exportación, 2026); R. Kelley Pace y Ronald Barry (1997).',
     license: 'CC BY 4.0 según el depósito v1', licenseUrl: ccBy,
