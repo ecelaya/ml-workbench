@@ -1,4 +1,5 @@
 import logging
+import os
 import threading
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
@@ -14,7 +15,9 @@ app = FastAPI(title='ML Workbench API', version='0.3.1')
 app.add_middleware(CORSMiddleware, allow_origins=[
     'http://localhost:5173', 'http://127.0.0.1:5173',
     'http://localhost:5174', 'http://127.0.0.1:5174',
-], allow_credentials=False, allow_methods=['GET', 'POST'], allow_headers=['Content-Type'])
+    *[origin.strip() for origin in os.getenv('CORS_ORIGINS', '').split(',')
+      if origin.strip() and '*' not in origin],
+], allow_credentials=False, allow_methods=['GET', 'POST', 'OPTIONS'], allow_headers=['Content-Type'])
 training_lock = threading.Lock()
 
 
