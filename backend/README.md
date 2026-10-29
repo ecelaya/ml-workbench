@@ -1,4 +1,6 @@
-# ML Workbench API · v0.3.1
+# ML Workbench API · v0.4.0
+
+La sección Comparaciones añade CV sobre train y una evaluación final de uso único con test reservado. El contrato, las sesiones efímeras y sus limitaciones están en [COMPARISONS.md](COMPARISONS.md). El entrenamiento individual mantiene su contrato v0.3.1.
 
 La configuración de recursos y el despliegue actual en Render se documentan en [RESOURCES.md](RESOURCES.md). Incluye admisión previa al multipart, ejecución aislada cancelable, timeout real, presupuesto RSS orientativo y límites configurables. Esta sección sustituye las restricciones de ejecución originales descritas más abajo.
 

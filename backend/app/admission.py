@@ -20,7 +20,9 @@ class AdmissionMiddleware:
         self.app = app
 
     async def __call__(self, scope, receive, send):
-        if scope['type'] != 'http' or scope['method'] != 'POST' or scope['path'].rstrip('/') != '/api/experiments':
+        path = scope.get('path', '').rstrip('/')
+        protected = path == '/api/experiments' or path == '/api/comparisons' or path.startswith('/api/comparisons/')
+        if scope['type'] != 'http' or scope['method'] != 'POST' or not protected:
             return await self.app(scope, receive, send)
         if not training_lock.acquire(blocking=False):
             return await JSONResponse({'detail': 'Ya hay una carga o entrenamiento en curso. Espera a que termine.'}, status_code=429)(scope, receive, send)

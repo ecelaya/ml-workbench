@@ -1,4 +1,6 @@
-# ML Workbench · v0.3.1
+# ML Workbench · v0.4.0
+
+**Comparaciones:** validación cruzada secuencial de 2–3 modelos sobre train, ranking por una métrica compatible y evaluación final opcional de un único candidato sobre test reservado. Reutiliza el asistente y los gráficos de Modelos. Consulta [el contrato y las decisiones metodológicas](backend/COMPARISONS.md) y [los límites de Render Free](backend/RESOURCES.md). Las sesiones de comparación caducan y se pierden al reiniciar el backend.
 
 Aplicación para explorar datasets CSV localmente. React, TypeScript estricto, Vite, Tailwind CSS y Recharts. El EDA funciona localmente sin backend. La sección Modelos conecta opcionalmente con FastAPI y scikit-learn: solo al pulsar Entrenar se envía el dataset completo al backend configurado. No requiere cuentas ni base de datos y no guarda datasets o modelos permanentemente.
 

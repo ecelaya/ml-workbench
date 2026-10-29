@@ -19,15 +19,23 @@ import logging
 from pathlib import Path
 
 from .errors import DataError
-from .schemas import ExperimentConfig
+from .schemas import ExperimentConfig, ComparisonConfig
 from .training import train_experiment
 
 
 def main():
     csv_path, config_path, result_path = map(Path, sys.argv[1:4])
     try:
-        settings = ExperimentConfig.model_validate_json(config_path.read_text(encoding='utf-8'))
-        payload = {'status': 200, 'result': train_experiment(csv_path, settings)}
+        mode = sys.argv[5] if len(sys.argv) > 5 else 'train'
+        if mode == 'train':
+            settings = ExperimentConfig.model_validate_json(config_path.read_text(encoding='utf-8'))
+            result = train_experiment(csv_path, settings)
+        else:
+            from .comparison import compare_models, evaluate_selected
+            settings = ComparisonConfig.model_validate_json(config_path.read_text(encoding='utf-8'))
+            operation = compare_models if mode == 'compare' else evaluate_selected
+            result = operation(csv_path, settings, csv_path.parent)
+        payload = {'status': 200, 'result': result}
     except DataError as exc:
         payload = {'status': 422, 'detail': str(exc)}
     except Exception:

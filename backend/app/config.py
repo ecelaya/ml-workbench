@@ -29,6 +29,9 @@ TREE_MAX_DEPTH = positive_int('ML_TREE_MAX_DEPTH', 12)
 TREE_MAX_LEAVES = positive_int('ML_TREE_MAX_LEAVES', 256)
 LOGISTIC_MAX_ITER = positive_int('ML_LOGISTIC_MAX_ITER', 1000)
 NUMERIC_THREADS = positive_int('ML_NUMERIC_THREADS', 1)
+SESSION_TTL_SECONDS = positive_int('ML_SESSION_TTL_SECONDS', 900)
+MAX_SESSIONS = positive_int('ML_MAX_SESSIONS', 3)
+SESSION_DISK_BYTES = positive_int('ML_SESSION_DISK_BYTES', 48 * 1024 * 1024)
 
 # Set before importing NumPy/scikit-learn; propagate to the worker process.
 for name in ('OMP_NUM_THREADS', 'OPENBLAS_NUM_THREADS', 'MKL_NUM_THREADS',

@@ -15,7 +15,7 @@ from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from .evaluation import evaluate
 from .preprocessing import build_preprocessor, fitted_pipeline_summary
 from .schemas import ExperimentConfig
-from .validation import DataError, prepare_data, read_csv_bytes, read_csv_file, split_data
+from .validation import DataError, DataSplit, prepare_data, read_csv_bytes, read_csv_file, split_data
 
 
 def estimator(config: ExperimentConfig):
@@ -31,11 +31,18 @@ def estimator(config: ExperimentConfig):
     }[config.model]()
 
 
-def train_experiment(content: bytes | Path, config: ExperimentConfig):
+def train_experiment(content: bytes | Path, config: ExperimentConfig, reserved_split=None):
     start = time.perf_counter()
     frame = read_csv_file(content) if isinstance(content, Path) else read_csv_bytes(content)
     data = prepare_data(frame, config)
-    split = split_data(data, config)
+    if reserved_split is None:
+        split = split_data(data, config)
+    else:
+        train, test = reserved_split['train'], reserved_split['test']
+        if len(train) + len(test) != len(data.X) or set(train) & set(test) or set(train) | set(test) != set(data.X.index):
+            raise DataError('La partición reservada no coincide con el dataset.')
+        split = DataSplit(data.X.loc[train], data.X.loc[test], data.y.loc[train], data.y.loc[test],
+                          reserved_split['stratified'], reserved_split['warnings'])
     sizes = {'received': len(frame), 'excluded_target': data.excluded_target, 'usable': len(data.y), 'train': len(split.y_train), 'test': len(split.y_test)}
     excluded_target = data.excluded_target
     class_count = data.y.nunique()

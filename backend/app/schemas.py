@@ -71,3 +71,18 @@ class ExperimentConfig(BaseModel):
         if not self.active_predictors():
             raise ValueError('Debe quedar al menos un predictor después de las exclusiones.')
         return self
+
+
+class ComparisonConfig(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    experiment: ExperimentConfig
+    models: list[str] = Field(min_length=2, max_length=3)
+    folds: Literal[3] = 3
+    primary_metric: str | None = None
+
+    @model_validator(mode='after')
+    def compatible_models(self):
+        allowed = CLASSIFIERS if self.experiment.task == 'classification' else REGRESSORS
+        if len(set(self.models)) != len(self.models) or any(model not in allowed for model in self.models):
+            raise ValueError('Selecciona entre dos y tres modelos distintos compatibles con la tarea.')
+        return self
