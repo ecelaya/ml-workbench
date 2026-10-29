@@ -1,0 +1,208 @@
+{
+  "api_version": "0.4.0",
+  "evaluation_scope": "cross_validation",
+  "primary_metric": "f1_macro",
+  "metric_names": [
+    "accuracy",
+    "precision_macro",
+    "recall_macro",
+    "f1_macro"
+  ],
+  "models": [
+    {
+      "model": "logistic_regression",
+      "folds": [
+        {
+          "fold": 1,
+          "metrics": {
+            "accuracy": 0.975,
+            "precision_macro": 0.9761904761904763,
+            "recall_macro": 0.9743589743589745,
+            "f1_macro": 0.974320987654321
+          },
+          "undefined_reasons": {},
+          "training_seconds": 0.004339299979619682,
+          "train_n": 80,
+          "validation_n": 40,
+          "warnings": []
+        },
+        {
+          "fold": 2,
+          "metrics": {
+            "accuracy": 0.95,
+            "precision_macro": 0.9555555555555556,
+            "recall_macro": 0.9523809523809524,
+            "f1_macro": 0.9505494505494506
+          },
+          "undefined_reasons": {},
+          "training_seconds": 0.003992100013419986,
+          "train_n": 80,
+          "validation_n": 40,
+          "warnings": []
+        },
+        {
+          "fold": 3,
+          "metrics": {
+            "accuracy": 0.95,
+            "precision_macro": 0.9555555555555556,
+            "recall_macro": 0.9523809523809524,
+            "f1_macro": 0.9505494505494506
+          },
+          "undefined_reasons": {},
+          "training_seconds": 0.00376480002887547,
+          "train_n": 80,
+          "validation_n": 40,
+          "warnings": []
+        }
+      ],
+      "metrics": {
+        "accuracy": {
+          "mean": 0.9583333333333334,
+          "std": 0.014433756729740658,
+          "valid_folds": 3,
+          "values": [
+            0.975,
+            0.95,
+            0.95
+          ]
+        },
+        "precision_macro": {
+          "mean": 0.9624338624338625,
+          "std": 0.011913576983278013,
+          "valid_folds": 3,
+          "values": [
+            0.9761904761904763,
+            0.9555555555555556,
+            0.9555555555555556
+          ]
+        },
+        "recall_macro": {
+          "mean": 0.9597069597069599,
+          "std": 0.012689016905266517,
+          "valid_folds": 3,
+          "values": [
+            0.9743589743589745,
+            0.9523809523809524,
+            0.9523809523809524
+          ]
+        },
+        "f1_macro": {
+          "mean": 0.958473296251074,
+          "std": 0.01372450334654807,
+          "valid_folds": 3,
+          "values": [
+            0.974320987654321,
+            0.9505494505494506,
+            0.9505494505494506
+          ]
+        }
+      },
+      "training_seconds": 0.012096200021915138
+    },
+    {
+      "model": "decision_tree_classifier",
+      "folds": [
+        {
+          "fold": 1,
+          "metrics": {
+            "accuracy": 0.975,
+            "precision_macro": 0.9761904761904763,
+            "recall_macro": 0.9743589743589745,
+            "f1_macro": 0.974320987654321
+          },
+          "undefined_reasons": {},
+          "training_seconds": 0.003170899930410087,
+          "train_n": 80,
+          "validation_n": 40,
+          "warnings": []
+        },
+        {
+          "fold": 2,
+          "metrics": {
+            "accuracy": 0.9,
+            "precision_macro": 0.9055555555555556,
+            "recall_macro": 0.9029304029304029,
+            "f1_macro": 0.9010989010989011
+          },
+          "undefined_reasons": {},
+          "training_seconds": 0.003084799973294139,
+          "train_n": 80,
+          "validation_n": 40,
+          "warnings": []
+        },
+        {
+          "fold": 3,
+          "metrics": {
+            "accuracy": 0.95,
+            "precision_macro": 0.9555555555555556,
+            "recall_macro": 0.9523809523809524,
+            "f1_macro": 0.9505494505494506
+          },
+          "undefined_reasons": {},
+          "training_seconds": 0.0035343000199645758,
+          "train_n": 80,
+          "validation_n": 40,
+          "warnings": []
+        }
+      ],
+      "metrics": {
+        "accuracy": {
+          "mean": 0.9416666666666668,
+          "std": 0.038188130791298645,
+          "valid_folds": 3,
+          "values": [
+            0.975,
+            0.9,
+            0.95
+          ]
+        },
+        "precision_macro": {
+          "mean": 0.9457671957671958,
+          "std": 0.036320545064538495,
+          "valid_folds": 3,
+          "values": [
+            0.9761904761904763,
+            0.9055555555555556,
+            0.9555555555555556
+          ]
+        },
+        "recall_macro": {
+          "mean": 0.9432234432234433,
+          "std": 0.036584220431205496,
+          "valid_folds": 3,
+          "values": [
+            0.9743589743589745,
+            0.9029304029304029,
+            0.9523809523809524
+          ]
+        },
+        "f1_macro": {
+          "mean": 0.9419897797675576,
+          "std": 0.03735397519412283,
+          "valid_folds": 3,
+          "values": [
+            0.974320987654321,
+            0.9010989010989011,
+            0.9505494505494506
+          ]
+        }
+      },
+      "training_seconds": 0.009789999923668802
+    }
+  ],
+  "best_model": "logistic_regression",
+  "folds": 3,
+  "splitter": "StratifiedKFold",
+  "seed": 42,
+  "sizes": {
+    "received": 150,
+    "excluded_target": 0,
+    "train": 120,
+    "test": 30
+  },
+  "duration_seconds": 0.30984189989976585,
+  "warnings": [],
+  "std_convention": "Muestral (ddof=1), descriptiva; no es un intervalo de confianza.",
+  "session_token": "fixture-iris",
+  "expires_at": 0
+}

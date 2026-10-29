@@ -1,4 +1,7 @@
-import { Bar, BarChart, CartesianGrid, ErrorBar, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { useState } from 'react';
+import { availableChartMetrics } from '../../lib/comparisonCharts';
+import { ComparisonChart } from './ComparisonChart';
+import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import type { ComparisonResult } from '../../types/comparison';
 import type { ModelId } from '../../types/experiment';
 import { MODELS } from '../../lib/experiments';
@@ -8,26 +11,24 @@ import { Note, Panel, Table } from '../eda/Shared';
 import { InfoTooltip } from '../InfoTooltip';
 import { classLabel, type ClassLabels } from '../../lib/classMetadata';
 const name = (id: string) => MODELS.find(m => m.id === id)?.name ?? id;
-const shortName = (id: string) => id.startsWith('random_forest') ? 'Random Forest' : id.startsWith('decision_tree') ? 'Árbol' : id === 'logistic_regression' ? 'Logística' : 'Lineal';
 const label = (metric: string) => METRIC_INFO[metric]?.label ?? metric;
 const formatMetric = (metric: string, value: number | null | undefined) => typeof value === 'number' && Number.isFinite(value) ? formatNumber(metric, value) : '—';
 const colors = ['#33866b', '#b1854b', '#6283a0'];
 export function ComparisonResults({ result, selected, onSelected, onEvaluate, busy, attempted, positiveClass, classLabels = {} }: { result: ComparisonResult; selected: ModelId | ''; onSelected: (id: ModelId) => void; onEvaluate: () => void; busy: boolean; attempted: boolean; positiveClass?: string; classLabels?: ClassLabels }) {
-  const metric = result.primary_metric;
-  const bars = result.models.map(m => ({ name: shortName(m.model), mean: m.metrics[metric]?.valid_folds === 3 ? m.metrics[metric]?.mean : null, std: m.metrics[metric]?.std ?? 0 }));
+  const [requestedMetric, setRequestedMetric] = useState(result.primary_metric);
+  const metrics = availableChartMetrics(result);
+  const metric = metrics.includes(requestedMetric) ? requestedMetric : metrics[0] ?? result.primary_metric;
   const folds = [1, 2, 3].map((fold, i) => ({ fold: `Fold ${fold}`, ...Object.fromEntries(result.models.map(m => [m.model, m.folds[i]?.metrics[metric] ?? null])) }));
   return <>
     <Panel title="Resultados de validación cruzada" detail={`Solo train: ${result.sizes.train} registros. Test reservado: ${result.sizes.test}. ${result.splitter}, shuffle, semilla ${result.seed}.`}>
       {positiveClass && <Note>Clase positiva compartida con Modelos: {classLabel(positiveClass, classLabels)}. Se utiliza en las métricas positivas y ROC-AUC.</Note>}
-      <Note>Orden por {label(metric)} ({minimizeMetric(metric) ? 'menor' : 'mayor'} es mejor). {result.best_model ? `Mejor media de CV: ${name(result.best_model)}.` : 'Ningún candidato tiene la métrica principal definida en todos los folds.'} Esto no demuestra superioridad estadística.</Note>
+      <Note>Orden por {label(result.primary_metric)} ({minimizeMetric(result.primary_metric) ? 'menor' : 'mayor'} es mejor). {result.best_model ? `Mejor media de CV: ${name(result.best_model)}.` : 'Ningún candidato tiene la métrica principal definida en todos los folds.'} Esto no demuestra superioridad estadística.</Note>
       <Table headers={['Modelo', ...result.metric_names.map(key => <span className="metric-label" key={key}>{label(key)}<InfoTooltip title={label(key)} explanation={METRIC_INFO[key]?.explanation.replace(/test/g, 'validación del fold') ?? 'Métrica por fold.'}/></span>), 'Fit total (s)']} rows={result.models.map(m => [name(m.model), ...result.metric_names.map(key => { const stat = m.metrics[key]; return stat ? `${formatMetric(key, stat.mean)} ± ${formatMetric(key, stat.std)} (${stat.valid_folds}/3)` : '—'; }), m.training_seconds.toFixed(2)])}/>
       <Note>Media ± desviación estándar entre folds. {result.std_convention} Los recuentos indican folds válidos; las medias parciales no optan al mejor modelo. Accuracy y su desviación se expresan en porcentaje y puntos porcentuales, respectivamente.</Note>
       {result.warnings.map(w => <Note key={w}>{w}</Note>)}
     </Panel>
-    <Panel title={`Rendimiento medio · ${label(metric)}`} detail="Medias con tres folds válidos. Barras de error: ± una desviación estándar descriptiva; no son intervalos de confianza.">
-      <div className="chart"><ResponsiveContainer width="100%" height="100%"><BarChart data={bars} margin={{ left: 12, right: 24, bottom: 40 }}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0}/><YAxis domain={[(min: number) => Math.min(0, min), (max: number) => Math.max(0, max)]} tickFormatter={v => formatMetric(metric, Number(v))}/><Tooltip formatter={v => formatMetric(metric, Number(v))}/><Bar dataKey="mean" name="Media" fill={colors[0]} isAnimationActive={false}><ErrorBar dataKey="std" direction="y" width={6}/></Bar></BarChart></ResponsiveContainer></div>
-    </Panel>
-    <Panel title="Resultados por fold" detail="Las mismas particiones se utilizan para todos los candidatos.">
+    <ComparisonChart key={result.session_token} result={result} metric={metric} onMetric={setRequestedMetric}/>
+    <Panel title="Resultados por fold" detail={`Métrica representada: ${label(metric)}. Las mismas particiones se utilizan para todos los candidatos.`}>
       <div className="chart"><ResponsiveContainer width="100%" height="100%"><LineChart data={folds} margin={{ left: 12, right: 24 }}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="fold"/><YAxis domain={[(min: number) => Math.min(0, min), (max: number) => Math.max(0, max)]} tickFormatter={v => formatMetric(metric, Number(v))}/><Tooltip formatter={v => formatMetric(metric, Number(v))}/><Legend/>{result.models.map((m, i) => <Line key={m.model} dataKey={m.model} name={name(m.model)} stroke={colors[i]} connectNulls={false} isAnimationActive={false}/>)}</LineChart></ResponsiveContainer></div>
       <Table headers={['Modelo', 'Fold', 'Train / validación', ...result.metric_names.map(label), 'Fit (s)']} rows={result.models.flatMap(m => m.folds.map(f => [name(m.model), f.fold, `${f.train_n} / ${f.validation_n}`, ...result.metric_names.map(key => formatMetric(key, f.metrics[key] ?? null)), f.training_seconds.toFixed(2)]))}/>
       {result.models.map(m => <details className="model-details" key={m.model}><summary>Avisos y métricas indefinidas · {name(m.model)}</summary>{m.folds.map(f => <Note key={f.fold}>Fold {f.fold}: {[...Object.entries(f.undefined_reasons).map(([key, reason]) => `${label(key)}: ${reason}`), ...f.warnings].join(' · ') || 'Sin avisos.'}</Note>)}</details>)}
