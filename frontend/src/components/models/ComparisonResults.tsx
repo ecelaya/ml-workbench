@@ -6,17 +6,19 @@ import { formatMetric as formatNumber, METRIC_INFO } from '../../lib/modelResult
 import { minimizeMetric } from '../../lib/comparisons';
 import { Note, Panel, Table } from '../eda/Shared';
 import { InfoTooltip } from '../InfoTooltip';
+import { classLabel, type ClassLabels } from '../../lib/classMetadata';
 const name = (id: string) => MODELS.find(m => m.id === id)?.name ?? id;
 const shortName = (id: string) => id.startsWith('random_forest') ? 'Random Forest' : id.startsWith('decision_tree') ? 'Árbol' : id === 'logistic_regression' ? 'Logística' : 'Lineal';
 const label = (metric: string) => METRIC_INFO[metric]?.label ?? metric;
 const formatMetric = (metric: string, value: number | null | undefined) => typeof value === 'number' && Number.isFinite(value) ? formatNumber(metric, value) : '—';
 const colors = ['#33866b', '#b1854b', '#6283a0'];
-export function ComparisonResults({ result, selected, onSelected, onEvaluate, busy, attempted }: { result: ComparisonResult; selected: ModelId | ''; onSelected: (id: ModelId) => void; onEvaluate: () => void; busy: boolean; attempted: boolean }) {
+export function ComparisonResults({ result, selected, onSelected, onEvaluate, busy, attempted, positiveClass, classLabels = {} }: { result: ComparisonResult; selected: ModelId | ''; onSelected: (id: ModelId) => void; onEvaluate: () => void; busy: boolean; attempted: boolean; positiveClass?: string; classLabels?: ClassLabels }) {
   const metric = result.primary_metric;
   const bars = result.models.map(m => ({ name: shortName(m.model), mean: m.metrics[metric]?.valid_folds === 3 ? m.metrics[metric]?.mean : null, std: m.metrics[metric]?.std ?? 0 }));
   const folds = [1, 2, 3].map((fold, i) => ({ fold: `Fold ${fold}`, ...Object.fromEntries(result.models.map(m => [m.model, m.folds[i]?.metrics[metric] ?? null])) }));
   return <>
     <Panel title="Resultados de validación cruzada" detail={`Solo train: ${result.sizes.train} registros. Test reservado: ${result.sizes.test}. ${result.splitter}, shuffle, semilla ${result.seed}.`}>
+      {positiveClass && <Note>Clase positiva compartida con Modelos: {classLabel(positiveClass, classLabels)}. Se utiliza en las métricas positivas y ROC-AUC.</Note>}
       <Note>Orden por {label(metric)} ({minimizeMetric(metric) ? 'menor' : 'mayor'} es mejor). {result.best_model ? `Mejor media de CV: ${name(result.best_model)}.` : 'Ningún candidato tiene la métrica principal definida en todos los folds.'} Esto no demuestra superioridad estadística.</Note>
       <Table headers={['Modelo', ...result.metric_names.map(key => <span className="metric-label" key={key}>{label(key)}<InfoTooltip title={label(key)} explanation={METRIC_INFO[key]?.explanation.replace(/test/g, 'validación del fold') ?? 'Métrica por fold.'}/></span>), 'Fit total (s)']} rows={result.models.map(m => [name(m.model), ...result.metric_names.map(key => { const stat = m.metrics[key]; return stat ? `${formatMetric(key, stat.mean)} ± ${formatMetric(key, stat.std)} (${stat.valid_folds}/3)` : '—'; }), m.training_seconds.toFixed(2)])}/>
       <Note>Media ± desviación estándar entre folds. {result.std_convention} Los recuentos indican folds válidos; las medias parciales no optan al mejor modelo. Accuracy y su desviación se expresan en porcentaje y puntos porcentuales, respectivamente.</Note>

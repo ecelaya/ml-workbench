@@ -46,6 +46,27 @@ def test_binary_metrics_against_independent_confusion_counts_and_auc_ranking():
     assert [row['support'] for row in result['class_metrics']] == [5, 3]
 
 
+@pytest.mark.parametrize('negative,positive', [('0', '1'), ('B', 'M'), ('alpha', 'omega')])
+def test_selected_positive_class_uses_real_codes_and_can_be_reversed(negative, positive):
+    truth = pd.Series([negative, negative, positive, positive, positive])
+    model = FixedClassifier([negative, positive, positive, positive, negative], [negative, positive],
+                            [[.9, .1], [.4, .6], [.2, .8], [.3, .7], [.6, .4]])
+    X = pd.DataFrame(index=range(5))
+    original = evaluate(model, X, truth, 'classification', positive)
+    reversed_ = evaluate(model, X, truth, 'classification', negative)
+    assert original['positive_class'] == positive
+    assert original['metrics']['precision_positive'] == pytest.approx(2 / 3)
+    assert original['metrics']['recall_positive'] == original['metrics']['sensitivity'] == pytest.approx(2 / 3)
+    assert original['metrics']['f1_positive'] == pytest.approx(2 / 3)
+    assert original['metrics']['specificity'] == .5
+    assert reversed_['metrics']['precision_positive'] == .5
+    assert reversed_['metrics']['recall_positive'] == reversed_['metrics']['sensitivity'] == .5
+    assert reversed_['metrics']['f1_positive'] == .5
+    assert reversed_['metrics']['specificity'] == pytest.approx(2 / 3)
+    assert original['metrics']['roc_auc'] == pytest.approx(5 / 6)
+    assert reversed_['metrics']['roc_auc'] == pytest.approx(5 / 6)
+
+
 def test_multiclass_support_and_macro_have_no_binary_metrics():
     truth = pd.Series(['cat', 'cat', 'dog', 'dog', 'bird', 'bird'])
     model = FixedClassifier(['cat', 'dog', 'dog', 'bird', 'bird', 'cat'], ['bird', 'cat', 'dog'], np.zeros((6, 3)))

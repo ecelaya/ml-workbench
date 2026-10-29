@@ -103,3 +103,13 @@ npm run build
 ```
 
 El script rechaza fuentes cuya huella no coincida. Las pruebas usan exactamente `parseCsv(File)` para los seis CSV, verifican dimensiones, tipos de problema por frecuencias de objetivo, ausencias e integridad. Se calculan estadísticas con todas las filas, incluyendo las 20640 de California Housing. Solo se adapta FileReader al ejecutar las pruebas en Node; el parsing, validación y perfiles son los del producto. Los gráficos pueden muestrear puntos para dibujarlos, pero los cálculos estadísticos no usan esa muestra.
+## Etiquetas y clase positiva sugerida
+
+Los metadatos del catálogo se aplican únicamente al objetivo original del ejemplo, sin recodificar sus celdas:
+
+- **Titanic (`survived`)**: `1` = «Sobrevivió», `0` = «No sobrevivió». Se propone `1` como clase positiva.
+- **Breast Cancer Wisconsin Diagnostic (`diagnosis`)**: el CSV UCI WDBC conserva `M` = «Maligno» y `B` = «Benigno». No utiliza la codificación numérica de otras distribuciones, como la de scikit-learn. El análisis propone el diagnóstico maligno (`M`) como evento positivo; es una elección modificable, no una propiedad de un orden numérico.
+
+Las fuentes y versiones originales se detallan en este documento. Cambiar la clase positiva cambia la interpretación de precision/recall/F1 positivos, sensibilidad, especificidad y ROC-AUC. La selección manual se comparte por objetivo entre Modelos y Comparaciones y se reinicia al cargar otro dataset. Las matrices y tablas muestran el nombre semántico junto al código original. No se envían etiquetas traducidas al estimador.
+
+En CSV propios se reconocen pares completos de etiquetas como yes/no, sí/no, true/false y positive/negative, sin asignar significados clínicos o de negocio. Los códigos 0/1 y los pares arbitrarios no reciben semántica inventada ni una clase positiva automática.
