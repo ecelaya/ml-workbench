@@ -10,6 +10,8 @@ export interface SampleDataset {
   problem: 'Clasificación binaria' | 'Clasificación multiclase' | 'Regresión';
   target: string;
   targetDescription: string;
+  classLabels?: Readonly<Record<string, string>>;
+  positiveClass?: string;
   targetUnits?: string;
   version: string;
   source: string;
@@ -28,6 +30,7 @@ export const SAMPLE_DATASETS: readonly SampleDataset[] = [
     id: 'titanic', name: 'Titanic', description: 'Pasajeros, supervivencia, categorías y valores ausentes. Versión completa titanic3.',
     filename: 'titanic.csv', rows: 1309, columns: 14, predictors: 13, identifiers: 0,
     problem: 'Clasificación binaria', target: 'survived', targetDescription: 'Supervivencia: 0 = no; 1 = sí.',
+    classLabels: { '0': 'No sobrevivió', '1': 'Sobrevivió' }, positiveClass: '1',
     version: 'OpenML 40945 · v1 · archivo 16826755', source: 'OpenML / Vanderbilt Biostatistics',
     sourceUrl: 'https://www.openml.org/d/40945', authors: 'Frank E. Harrell Jr. y Thomas Cason; fuentes históricas citadas en OpenML.',
     license: 'CC BY según condiciones OpenML; metadato original: «Public»', licenseUrl: 'https://www.openml.org/terms',
@@ -64,6 +67,7 @@ export const SAMPLE_DATASETS: readonly SampleDataset[] = [
     id: 'breast-cancer', name: 'Breast Cancer Wisconsin Diagnostic', description: 'Treinta medidas de núcleos celulares, identificador y diagnóstico. Versión WDBC.',
     filename: 'breast-cancer-wisconsin-diagnostic.csv', rows: 569, columns: 32, predictors: 30, identifiers: 1,
     problem: 'Clasificación binaria', target: 'diagnosis', targetDescription: 'Diagnóstico original: M = maligno; B = benigno.',
+    classLabels: { M: 'Maligno', B: 'Benigno' }, positiveClass: 'M',
     version: 'UCI 17 · wdbc.data · snapshot 2026-10-27', source: 'UCI Machine Learning Repository',
     sourceUrl: 'https://doi.org/10.24432/C5DW2B', authors: 'William H. Wolberg, W. Nick Street y Olvi L. Mangasarian; cita UCI: Wolberg et al. (1993).',
     license: 'CC BY 4.0', licenseUrl: ccBy,

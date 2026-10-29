@@ -1,0 +1,181 @@
+{
+  "api_version": "0.4.0",
+  "evaluation_scope": "cross_validation",
+  "primary_metric": "rmse",
+  "metric_names": [
+    "mae",
+    "rmse",
+    "r2"
+  ],
+  "models": [
+    {
+      "model": "decision_tree_regressor",
+      "folds": [
+        {
+          "fold": 1,
+          "metrics": {
+            "mae": 0.415335194690404,
+            "rmse": 0.6189629416496506,
+            "r2": 0.719668025591542
+          },
+          "undefined_reasons": {},
+          "training_seconds": 0.059790799976326525,
+          "train_n": 11008,
+          "validation_n": 5504,
+          "warnings": []
+        },
+        {
+          "fold": 2,
+          "metrics": {
+            "mae": 0.4443825691771189,
+            "rmse": 0.6604637917616089,
+            "r2": 0.6709724266469344
+          },
+          "undefined_reasons": {},
+          "training_seconds": 0.05904029996600002,
+          "train_n": 11008,
+          "validation_n": 5504,
+          "warnings": []
+        },
+        {
+          "fold": 3,
+          "metrics": {
+            "mae": 0.4369037963258384,
+            "rmse": 0.6466024889836711,
+            "r2": 0.6827472999316988
+          },
+          "undefined_reasons": {},
+          "training_seconds": 0.05876609997358173,
+          "train_n": 11008,
+          "validation_n": 5504,
+          "warnings": []
+        }
+      ],
+      "metrics": {
+        "mae": {
+          "mean": 0.4322071867311204,
+          "std": 0.01508247650111751,
+          "valid_folds": 3,
+          "values": [
+            0.415335194690404,
+            0.4443825691771189,
+            0.4369037963258384
+          ]
+        },
+        "rmse": {
+          "mean": 0.6420097407983102,
+          "std": 0.021128183592642517,
+          "valid_folds": 3,
+          "values": [
+            0.6189629416496506,
+            0.6604637917616089,
+            0.6466024889836711
+          ]
+        },
+        "r2": {
+          "mean": 0.6911292507233918,
+          "std": 0.025406852686810474,
+          "valid_folds": 3,
+          "values": [
+            0.719668025591542,
+            0.6709724266469344,
+            0.6827472999316988
+          ]
+        }
+      },
+      "training_seconds": 0.17759719991590828
+    },
+    {
+      "model": "linear_regression",
+      "folds": [
+        {
+          "fold": 1,
+          "metrics": {
+            "mae": 0.5335080855420605,
+            "rmse": 0.7281993402251367,
+            "r2": 0.6119891211218851
+          },
+          "undefined_reasons": {},
+          "training_seconds": 0.006752899964340031,
+          "train_n": 11008,
+          "validation_n": 5504,
+          "warnings": []
+        },
+        {
+          "fold": 2,
+          "metrics": {
+            "mae": 0.52126962059468,
+            "rmse": 0.7096447922472983,
+            "r2": 0.620146346843802
+          },
+          "undefined_reasons": {},
+          "training_seconds": 0.006946299923583865,
+          "train_n": 11008,
+          "validation_n": 5504,
+          "warnings": []
+        },
+        {
+          "fold": 3,
+          "metrics": {
+            "mae": 0.5329670945538825,
+            "rmse": 0.7247854283923105,
+            "r2": 0.6013888068332272
+          },
+          "undefined_reasons": {},
+          "training_seconds": 0.00652789999730885,
+          "train_n": 11008,
+          "validation_n": 5504,
+          "warnings": []
+        }
+      ],
+      "metrics": {
+        "mae": {
+          "mean": 0.5292482668968743,
+          "std": 0.0069150029229178385,
+          "valid_folds": 3,
+          "values": [
+            0.5335080855420605,
+            0.52126962059468,
+            0.5329670945538825
+          ]
+        },
+        "rmse": {
+          "mean": 0.7208765202882486,
+          "std": 0.009875600467312264,
+          "valid_folds": 3,
+          "values": [
+            0.7281993402251367,
+            0.7096447922472983,
+            0.7247854283923105
+          ]
+        },
+        "r2": {
+          "mean": 0.6111747582663047,
+          "std": 0.009405249436218621,
+          "valid_folds": 3,
+          "values": [
+            0.6119891211218851,
+            0.620146346843802,
+            0.6013888068332272
+          ]
+        }
+      },
+      "training_seconds": 0.020227099885232747
+    }
+  ],
+  "best_model": "decision_tree_regressor",
+  "folds": 3,
+  "splitter": "KFold",
+  "seed": 42,
+  "sizes": {
+    "received": 20640,
+    "excluded_target": 0,
+    "train": 16512,
+    "test": 4128
+  },
+  "duration_seconds": 0.6458098000148311,
+  "warnings": [],
+  "std_convention": "Muestral (ddof=1), descriptiva; no es un intervalo de confianza.",
+  "session_token": "fixture-california-housing",
+  "expires_at": 0
+}

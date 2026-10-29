@@ -10,7 +10,7 @@ export function Panel({ title, detail, children }: { title: string; detail?: str
   return <section className="panel"><div className="panel-heading"><div><h2>{title}</h2>{detail && <p>{detail}</p>}</div></div>{children}</section>;
 }
 export function Note({ children }: { children: ReactNode }) { return <p className="eda-note">{children}</p>; }
-export function Table({ headers, rows }: { headers: string[]; rows: ReactNode[][] }) {
+export function Table({ headers, rows }: { headers: ReactNode[]; rows: ReactNode[][] }) {
   const [page, setPage] = useState(0);
   const pages = Math.max(1, Math.ceil(rows.length / 20)), current = Math.min(page, pages - 1);
   return <><div className="table-scroll" tabIndex={0} role="region" aria-label="Tabla de resultados"><table><thead><tr>{headers.map((h, i) => <th key={i} scope="col">{h}</th>)}</tr></thead><tbody>{rows.slice(current * 20, (current + 1) * 20).map((row, i) => <tr key={i}>{row.map((cell, j) => <td key={j}>{cell}</td>)}</tr>)}</tbody></table></div>{!rows.length && <Note>No hay observaciones válidas para esta tabla.</Note>}{pages > 1 && <div className="pagination"><span>{rows.length} resultados · Página {current + 1} de {pages}</span><div><button disabled={!current} onClick={() => setPage(current - 1)} aria-label="Resultados anteriores">←</button><button disabled={current >= pages - 1} onClick={() => setPage(current + 1)} aria-label="Resultados siguientes">→</button></div></div>}</>;

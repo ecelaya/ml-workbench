@@ -1,5 +1,7 @@
 # Recursos y despliegue inicial en Render Free
 
+En v0.4 el mismo permiso y supervisor protegen también la CV completa y la evaluación final. Las comparaciones guardan temporalmente el CSV y los índices en disco con TTL/cupo, sin persistencia de modelos; véase [COMPARISONS.md](COMPARISONS.md). La supervisión de 60 segundos se aplica a la comparación completa, no se reinicia por fold.
+
 El servidor requiere Python 3.11 o posterior. Los controles están en `app/config.py` y se leen al arrancar; reinicia el servicio tras cambiar variables. Valores no enteros o no positivos impiden arrancar, en lugar de desactivar una protección silenciosamente. No se han ampliado los techos anteriores de CSV, filas, columnas ni características.
 
 En Render, con directorio raíz `backend`, utiliza:

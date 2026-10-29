@@ -50,9 +50,13 @@ async def supervise(command: list[str], *, timeout: float, cwd: Path | None = No
 
 
 async def run_training(csv_path: Path, settings, directory: Path):
+    return await run_job(csv_path, settings, directory)
+
+
+async def run_job(csv_path: Path, settings, directory: Path, mode='train'):
     config_path, result_path = directory / 'config.json', directory / 'result.json'
     config_path.write_text(settings.model_dump_json(), encoding='utf-8')
-    await supervise([sys.executable, '-m', 'app.worker', str(csv_path), str(config_path), str(result_path), str(os.getpid())],
+    await supervise([sys.executable, '-m', 'app.worker', str(csv_path), str(config_path), str(result_path), str(os.getpid()), mode],
                     timeout=config.TRAINING_TIMEOUT_SECONDS, cwd=Path(__file__).resolve().parents[1])
     try:
         if result_path.stat().st_size > config.MAX_RESULT_BYTES:

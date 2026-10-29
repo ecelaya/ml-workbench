@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.metrics import accuracy_score, confusion_matrix, f1_score, mean_absolute_error, precision_recall_fscore_support, precision_score, r2_score, recall_score, roc_auc_score, root_mean_squared_error
 
 
-def evaluate(pipeline, X_test, y_test, task, positive_class=None):
+def evaluate(pipeline, X_test, y_test, task, positive_class=None, undefined_nan=False):
     prediction = pipeline.predict(X_test)
     warnings = []
     if task == 'classification':
@@ -14,6 +14,10 @@ def evaluate(pipeline, X_test, y_test, task, positive_class=None):
             'f1_macro': float(f1_score(y_test, prediction, labels=classes, average='macro', zero_division=0)),
         }
         precision, recall, f1, support = precision_recall_fscore_support(y_test, prediction, labels=classes, zero_division=0)
+        if undefined_nan:
+            precision, recall, f1, support = precision_recall_fscore_support(y_test, prediction, labels=classes, zero_division=np.nan)
+            for name, values in [('precision_macro', precision), ('recall_macro', recall), ('f1_macro', f1)]:
+                metrics[name] = float(np.mean(values))
         by_class = [{'label': str(label), 'precision': float(precision[i]), 'recall': float(recall[i]), 'f1': float(f1[i]), 'support': int(support[i])} for i, label in enumerate(classes)]
         if np.any(support == 0):
             warnings.append('Alguna clase no tiene observaciones en test. Sus métricas por clase usan zero_division=0 y la normalización de esa fila no está definida.')
@@ -30,6 +34,9 @@ def evaluate(pipeline, X_test, y_test, task, positive_class=None):
                 'specificity': float(recall_score(y_test, prediction, average='binary', pos_label=negative_class, zero_division=0)) if np.any(np.asarray(y_test) == negative_class) else None,
                 'roc_auc': None,
             })
+            if undefined_nan:
+                p, r, f, _ = precision_recall_fscore_support(y_test, prediction, labels=[positive_class], zero_division=np.nan)
+                metrics.update(precision_positive=float(p[0]), recall_positive=float(r[0]), f1_positive=float(f[0]))
             if len(pipeline.classes_) == 2 and len(set(y_test)) == 2 and hasattr(pipeline, 'predict_proba'):
                 column = list(pipeline.classes_).index(positive_class)
                 metrics['roc_auc'] = float(roc_auc_score(np.asarray(y_test) == positive_class, pipeline.predict_proba(X_test)[:, column]))

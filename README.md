@@ -1,4 +1,8 @@
-# ML Workbench · v0.3.1
+# ML Workbench · v0.4.0
+
+**Modelos y generalización:** CV de tres folds por defecto, con test reservado y evaluación final explícita; train/test simple queda como alternativa rápida. La elección manual se conserva con el dataset actual y un nuevo dataset vuelve a CV. La sección Generalización muestra puntuaciones in-sample frente a test/validación y orientación metodológica sin clasificaciones automáticas de sobreajuste. [Detalles y límites](backend/GENERALIZATION.md).
+
+**Comparaciones:** validación cruzada secuencial de 2–3 modelos sobre train, ranking por una métrica compatible y evaluación final opcional de un único candidato sobre test reservado. Reutiliza el asistente y los gráficos de Modelos. Consulta [el contrato y las decisiones metodológicas](backend/COMPARISONS.md) y [los límites de Render Free](backend/RESOURCES.md). Las sesiones de comparación caducan y se pierden al reiniciar el backend.
 
 Aplicación para explorar datasets CSV localmente. React, TypeScript estricto, Vite, Tailwind CSS y Recharts. El EDA funciona localmente sin backend. La sección Modelos conecta opcionalmente con FastAPI y scikit-learn: solo al pulsar Entrenar se envía el dataset completo al backend configurado. No requiere cuentas ni base de datos y no guarda datasets o modelos permanentemente.
 
