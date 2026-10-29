@@ -19,7 +19,7 @@ import logging
 from pathlib import Path
 
 from .errors import DataError
-from .schemas import ExperimentConfig, ComparisonConfig
+from .schemas import ExperimentConfig, ComparisonConfig, ModelCVConfig
 from .training import train_experiment
 
 
@@ -32,9 +32,12 @@ def main():
             result = train_experiment(csv_path, settings)
         else:
             from .comparison import compare_models, evaluate_selected
-            settings = ComparisonConfig.model_validate_json(config_path.read_text(encoding='utf-8'))
-            operation = compare_models if mode == 'compare' else evaluate_selected
-            result = operation(csv_path, settings, csv_path.parent)
+            raw = json.loads(config_path.read_text(encoding='utf-8'))
+            settings = (ModelCVConfig if raw.get('return_train_score') is True else ComparisonConfig).model_validate(raw)
+            if mode in ('compare', 'model_cv'):
+                result = compare_models(csv_path, settings, csv_path.parent, return_train_score=mode == 'model_cv')
+            else:
+                result = evaluate_selected(csv_path, settings, csv_path.parent)
         payload = {'status': 200, 'result': result}
     except DataError as exc:
         payload = {'status': 422, 'detail': str(exc)}

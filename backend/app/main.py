@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import ValidationError
 from starlette.concurrency import run_in_threadpool
 
-from .schemas import ExperimentConfig, ComparisonConfig
+from .schemas import ExperimentConfig, ComparisonConfig, ModelCVConfig
 from pydantic import BaseModel, ConfigDict, Field
 from .config import MAX_BYTES, MAX_CONFIG_CHARS
 from .admission import AdmissionMiddleware, training_lock
@@ -86,16 +86,25 @@ async def experiment(file: UploadFile = File(...), config: str = Form(..., max_l
 
 @app.post('/api/comparisons')
 async def comparison(file: UploadFile = File(...), config: str = Form(..., max_length=MAX_CONFIG_CHARS)):
+    return await run_cv_upload(file, config)
+
+
+@app.post('/api/experiments/cv')
+async def model_cv(file: UploadFile = File(...), config: str = Form(..., max_length=MAX_CONFIG_CHARS)):
+    return await run_cv_upload(file, config, single_model=True)
+
+
+async def run_cv_upload(file, config, single_model=False):
     token = None
     success = False
     try:
-        settings = ComparisonConfig.model_validate_json(config)
+        settings = (ModelCVConfig if single_model else ComparisonConfig).model_validate_json(config)
         token, directory = sessions.create()
         path = directory / 'dataset.csv'
         await save_upload(file, path)
         sessions.check_budget()
         checksum = await run_in_threadpool(digest, path)
-        result = await run_job(path, settings, directory, mode='compare')
+        result = await run_job(path, settings, directory, mode='model_cv' if single_model else 'compare')
         sessions.check_budget()
         entry = sessions.entries[token]
         entry.update(active=False, settings=settings, digest=checksum,

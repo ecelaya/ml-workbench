@@ -36,8 +36,18 @@ export async function runComparison(baseUrl: string, dataset: Dataset, config: C
   const form = experimentForm(dataset, config.experiment);
   form.set('config', JSON.stringify(config));
   const result = await request(baseUrl, '/api/comparisons', form, signal);
+  return cvResponse(result);
+}
+function cvResponse(result: unknown): ComparisonResult {
   if (!result || typeof result !== 'object' || !('evaluation_scope' in result) || result.evaluation_scope !== 'cross_validation' || !('session_token' in result) || !('models' in result) || !('api_version' in result) || result.api_version !== '0.4.0') throw new Error('Actualiza el backend: se requiere la API de comparaciones v0.4.');
   return result as ComparisonResult;
+}
+export async function runModelCV(baseUrl: string, dataset: Dataset, config: ComparisonConfig['experiment'], signal: AbortSignal): Promise<ComparisonResult> {
+  const errors = validateExperiment(dataset, config);
+  if (errors.length) throw new Error(errors.join(' '));
+  const form = experimentForm(dataset, config);
+  form.set('config', JSON.stringify({ experiment: config, models: [config.model], folds: 3, return_train_score: true }));
+  return cvResponse(await request(baseUrl, '/api/experiments/cv', form, signal));
 }
 export async function evaluateComparison(baseUrl: string, token: string, model: ModelId, signal: AbortSignal): Promise<ExperimentResult> {
   const result = await request(baseUrl, '/api/comparisons/evaluate', JSON.stringify({ token, model }), signal);

@@ -8,7 +8,7 @@ import warnings
 from pathlib import Path
 
 import numpy as np
-from sklearn.model_selection import KFold, StratifiedKFold
+from sklearn.model_selection import KFold, StratifiedKFold, cross_validate
 from sklearn.pipeline import Pipeline
 
 from .evaluation import evaluate
@@ -44,7 +44,7 @@ def rank_models(results, metric, folds=3):
     return ranked, best
 
 
-def compare_models(path: Path, settings: ComparisonConfig, directory: Path):
+def compare_models(path: Path, settings: ComparisonConfig, directory: Path, return_train_score=False):
     started = time.perf_counter()
     cfg = settings.experiment
     frame = read_csv_file(path)
@@ -86,9 +86,19 @@ def compare_models(path: Path, settings: ComparisonConfig, directory: Path):
                 warnings.simplefilter('always')
                 fit_started = time.perf_counter()
                 try:
-                    pipeline.fit(X.iloc[train], y.iloc[train])
-                    duration = time.perf_counter() - fit_started
-                    evaluation = evaluate(pipeline, X.iloc[valid], y.iloc[valid], cfg.task, positive, undefined_nan=True)
+                    if return_train_score:
+                        def scorer(fitted, features, target):
+                            output = evaluate(fitted, features, target, cfg.task, positive, undefined_nan=True)
+                            return {metric: value if value is not None else np.nan for metric, value in output['metrics'].items()}
+                        scored = cross_validate(pipeline, X, y, cv=[(train, valid)], scoring=scorer,
+                                                return_train_score=True, n_jobs=1, error_score='raise')
+                        duration = float(scored['fit_time'][0])
+                        evaluation = {'metrics': {metric: float(scored[f'test_{metric}'][0]) for metric in metrics}, 'warnings': []}
+                        train_evaluation = {'metrics': {metric: float(scored[f'train_{metric}'][0]) for metric in metrics}}
+                    else:
+                        pipeline.fit(X.iloc[train], y.iloc[train])
+                        duration = time.perf_counter() - fit_started
+                        evaluation = evaluate(pipeline, X.iloc[valid], y.iloc[valid], cfg.task, positive, undefined_nan=True)
                 except (ValueError, TypeError, OverflowError, FloatingPointError) as exc:
                     raise DataError('No se pudo completar un fold. Revisa los datos, escalado y preprocesamiento.') from exc
             values, reasons = {}, {}
@@ -101,10 +111,15 @@ def compare_models(path: Path, settings: ComparisonConfig, directory: Path):
             scores.append({'fold': index + 1, 'metrics': values, 'undefined_reasons': reasons,
                            'training_seconds': duration, 'train_n': len(train), 'validation_n': len(valid),
                            'warnings': [*notes, *evaluation['warnings'], *[str(w.message) for w in captured]]})
+            if return_train_score:
+                scores[-1]['train_metrics'] = {metric: value if value is not None and np.isfinite(value) else None for metric, value in train_evaluation['metrics'].items()}
+                scores[-1]['train_undefined_reasons'] = {metric: 'Denominador nulo, objetivo constante o muestra insuficiente.' for metric, value in scores[-1]['train_metrics'].items() if value is None}
             del pipeline, prep, evaluation
             gc.collect()
         results.append({'model': model, 'folds': scores, 'metrics': aggregate(scores, metrics),
                         'training_seconds': sum(fold['training_seconds'] for fold in scores)})
+        if return_train_score:
+            results[-1]['train_metrics'] = aggregate([{'metrics': fold['train_metrics']} for fold in scores], metrics)
     ranked, best = rank_models(results, primary, settings.folds)
     return {'api_version': '0.4.0', 'evaluation_scope': 'cross_validation', 'primary_metric': primary,
             'metric_names': metrics, 'models': ranked, 'best_model': best, 'folds': settings.folds,

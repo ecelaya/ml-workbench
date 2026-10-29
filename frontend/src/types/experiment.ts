@@ -37,6 +37,8 @@ export interface ExperimentResult {
   training_seconds: number; pipeline_summary: PipelineSummary;
   library_versions: Record<string, string>;
   metrics: Record<string, number | null>;
+  train_metrics?: Record<string, number | null>;
+  train_warnings?: string[];
   confusion_matrix: number[][] | null; classes: string[]; positive_class: string | null;
   confusion_matrix_normalized: number[][] | null;
   class_metrics: { label: string; precision: number; recall: number; f1: number; support: number }[];

@@ -56,6 +56,7 @@ def train_experiment(content: bytes | Path, config: ExperimentConfig, reserved_s
             pipeline.fit(split.X_train, split.y_train)
             training_seconds = time.perf_counter() - fit_start
             evaluation = evaluate(pipeline, split.X_test, split.y_test, config.task, config.positive_class)
+            train_evaluation = evaluate(pipeline, split.X_train, split.y_train, config.task, config.positive_class)
             summary, summary_notes = fitted_pipeline_summary(preprocessor, split.X_test, config, excluded_target)
             if summary['feature_count'] != pipeline.named_steps['model'].n_features_in_:
                 raise DataError('El resumen de características no coincide con el estimador ajustado.')
@@ -74,6 +75,7 @@ def train_experiment(content: bytes | Path, config: ExperimentConfig, reserved_s
         'sizes': sizes,
         'stratified': split.stratified, 'duration_seconds': time.perf_counter() - start,
         'training_seconds': training_seconds, 'pipeline_summary': summary,
+        'train_metrics': train_evaluation['metrics'], 'train_warnings': train_evaluation['warnings'],
         'library_versions': {'scikit-learn': sklearn.__version__, 'scipy': scipy.__version__, 'numpy': np.__version__},
         'evaluation_scope': 'test', **{k: v for k, v in evaluation.items() if k != 'warnings'},
         'warnings': list(dict.fromkeys([*split.warnings, *notes, *evaluation['warnings']])),

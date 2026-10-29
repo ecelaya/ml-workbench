@@ -86,3 +86,8 @@ class ComparisonConfig(BaseModel):
         if len(set(self.models)) != len(self.models) or any(model not in allowed for model in self.models):
             raise ValueError('Selecciona entre dos y tres modelos distintos compatibles con la tarea.')
         return self
+
+
+class ModelCVConfig(ComparisonConfig):
+    models: list[str] = Field(min_length=1, max_length=1)
+    return_train_score: Literal[True] = True

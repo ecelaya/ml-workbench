@@ -1,5 +1,7 @@
 # ML Workbench API · v0.4.0
 
+Modelos ofrece entrenamiento simple (predeterminado) o CV opcional con puntuaciones in-sample y validación por fold. Ambos permiten consultar Generalización sin umbrales automáticos de sobreajuste. Véase [GENERALIZATION.md](GENERALIZATION.md) para el contrato, el test reservado y la reutilización del motor CV.
+
 La sección Comparaciones añade CV sobre train y una evaluación final de uso único con test reservado. El contrato, las sesiones efímeras y sus limitaciones están en [COMPARISONS.md](COMPARISONS.md). El entrenamiento individual mantiene su contrato v0.3.1.
 
 La configuración de recursos y el despliegue actual en Render se documentan en [RESOURCES.md](RESOURCES.md). Incluye admisión previa al multipart, ejecución aislada cancelable, timeout real, presupuesto RSS orientativo y límites configurables. Esta sección sustituye las restricciones de ejecución originales descritas más abajo.
@@ -90,7 +92,7 @@ Identificadores: excluidos inicialmente; el usuario puede seleccionarlos explíc
 5. Modelos: LogisticRegression (máximo inicial de 1000 iteraciones), DecisionTreeClassifier, RandomForestClassifier (100 árboles); LinearRegression, DecisionTreeRegressor, RandomForestRegressor (100 árboles). Los árboles y bosques tienen inicialmente profundidad máxima 12 y 256 hojas por árbol. Se fija random_state cuando existe y `n_jobs=1` donde se admite. Estos límites son configurables en el servidor; los parámetros ejecutados se devuelven en el resultado. No hay búsqueda de hiperparámetros ni recomendación por métricas de test.
 6. Evaluar test completo sin redondear: accuracy y precision/recall/F1 macro para clasificación; en binaria también precision/recall/F1 positivos, sensibilidad, especificidad y ROC-AUC con la clase positiva elegida. Las probabilidades se seleccionan por el índice real de esa etiqueta en classes_, no suponiendo que sea 1 o la segunda columna. Se devuelven métricas por clase con support y matrices absolutas/normalizadas por fila calculadas con scikit-learn. Macro usa la unión de clases train/test con zero_division=0; filas sin soporte no tienen un porcentaje real definido. En regresión: MAE, RMSE y R²; objetivo constante en test implica R² null. Los pares para gráficos se seleccionan determinísticamente (máximo 500), incluyen residuo real menos predicción y no se recortan negativos. Los dominios del gráfico provienen de todo test, no de la muestra dibujada.
 
-Los resultados devuelven configuración ejecutada, parámetros del estimador, tamaños, si hubo estratificación, duración, métricas de test y avisos. No se muestran métricas de train. Las advertencias de convergencia y fallos de datos se devuelven al frontend. Los errores inesperados generan HTTP 500 y se registran en el proceso, sin fabricar métricas.
+Los resultados devuelven configuración ejecutada, parámetros del estimador, tamaños, si hubo estratificación, duración, métricas de test, métricas optimistas de train y avisos. Generalización compara ambas sin diagnosticar sobreajuste mediante umbrales universales. Las advertencias de convergencia y fallos de datos se devuelven al frontend. Los errores inesperados generan HTTP 500 y se registran en el proceso, sin fabricar métricas.
 
 ## Pruebas
 

@@ -21,7 +21,7 @@ class AdmissionMiddleware:
 
     async def __call__(self, scope, receive, send):
         path = scope.get('path', '').rstrip('/')
-        protected = path == '/api/experiments' or path == '/api/comparisons' or path.startswith('/api/comparisons/')
+        protected = path in ('/api/experiments', '/api/experiments/cv', '/api/comparisons') or path.startswith('/api/comparisons/')
         if scope['type'] != 'http' or scope['method'] != 'POST' or not protected:
             return await self.app(scope, receive, send)
         if not training_lock.acquire(blocking=False):
