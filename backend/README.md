@@ -1,6 +1,6 @@
 # ML Workbench API · v0.4.0
 
-Modelos ofrece entrenamiento simple (predeterminado) o CV opcional con puntuaciones in-sample y validación por fold. Ambos permiten consultar Generalización sin umbrales automáticos de sobreajuste. Véase [GENERALIZATION.md](GENERALIZATION.md) para el contrato, el test reservado y la reutilización del motor CV.
+Modelos ofrece CV de tres folds por defecto o entrenamiento train/test simple como alternativa rápida, con puntuaciones in-sample y fuera de train. Ambos permiten consultar Generalización sin umbrales automáticos de sobreajuste. Véase [GENERALIZATION.md](GENERALIZATION.md) para el contrato, el test reservado y la reutilización del motor CV.
 
 La sección Comparaciones añade CV sobre train y una evaluación final de uso único con test reservado. El contrato, las sesiones efímeras y sus limitaciones están en [COMPARISONS.md](COMPARISONS.md). El entrenamiento individual mantiene su contrato v0.3.1.
 

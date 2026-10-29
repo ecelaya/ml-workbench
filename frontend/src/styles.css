@@ -28,3 +28,5 @@
 
 .comparison-plot{height:320px;padding:0 8px;min-width:0}.comparison-tooltip{max-width:280px;white-space:normal;background:#fff;border:1px solid #d3dfd6;border-radius:9px;padding:12px 14px;box-shadow:0 5px 20px #203b2c18;font-size:12px;line-height:1.6;color:#41574a;overflow-wrap:anywhere}.comparison-tooltip strong{font-weight:600;color:#294b39}.comparison-tooltip p{margin:5px 0 0}.comparison-details{padding:0 20px 20px;display:grid;gap:8px}.comparison-details summary{cursor:pointer;font-size:11px;line-height:1.7;color:#41574a}.comparison-details .comparison-tooltip{max-width:none;box-shadow:none;margin-top:8px}@media(max-width:500px){.comparison-plot{height:300px;padding:0}.comparison-details{padding:0 16px 16px}}
 .comparison-hover-tooltip{position:fixed;z-index:10000;pointer-events:none;max-width:min(280px,calc(100vw - 16px));max-height:calc(100dvh - 16px);overflow:auto}
+
+.generalization-chart{height:300px;padding:0 12px 12px;min-width:0}@media(max-width:500px){.generalization-chart{height:280px;padding:0 2px 8px}}
