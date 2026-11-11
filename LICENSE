@@ -1,0 +1,22 @@
+ML Workbench ? All rights reserved
+
+Copyright (c) 2026 ecelaya
+
+All rights reserved in the original code, documentation and visual assets of
+ML Workbench, except where expressly stated otherwise.
+
+No license is granted to copy, modify, redistribute, sublicense, sell, or
+create derivative works of these materials without prior written permission
+from the applicable copyright holder, except as required by applicable law
+or by the terms of a hosting service accepted by the copyright holder.
+
+This notice does not restrict ordinary use of an authorized hosted instance
+of the application through its user interface, including the browser copies
+necessary for that use. It does not authorize extracting or reusing the
+application's source code or assets in another product.
+
+Third-party software, datasets and other third-party materials remain subject
+to their respective licenses and terms. In particular, the example datasets
+are governed by the sources, attribution and conditions documented in
+frontend/public/datasets/SOURCES.md. This notice does not replace or restrict
+those terms.

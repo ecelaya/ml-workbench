@@ -123,3 +123,9 @@ Solo se consideran ausentes campos vacíos o con espacios, reutilizando `isMissi
 4. Selecciona Node.js 22 o superior. El EDA no necesita variables de entorno ni funciones serverless. Modelos utiliza VITE_API_URL si se conecta un backend.
 
 No hay rutas del servidor que requieran rewrites. El frontend se puede compilar y desplegar aunque FastAPI no esté disponible. Configura VITE_API_URL en Vercel solo si tienes un backend accesible por HTTPS y añade su origen explícito en CORS del backend. Las instrucciones de desarrollo están en backend/README.md. El despliegue remoto y la comparación persistente de modelos quedan fuera de este MVP. No se ha desplegado automáticamente.
+
+## Derechos y uso del c?digo
+
+El c?digo y los recursos originales de ML Workbench tienen todos los derechos reservados. No se concede permiso para copiarlos, modificarlos o redistribuirlos sin autorizaci?n escrita, salvo las excepciones indicadas en [LICENSE](LICENSE). El uso normal de una instancia web autorizada est? permitido.
+
+Las dependencias y los datasets de terceros conservan sus propias licencias y condiciones; consulta [las fuentes de los datasets](frontend/public/datasets/SOURCES.md). Este proyecto no se distribuye bajo una licencia de c?digo abierto.

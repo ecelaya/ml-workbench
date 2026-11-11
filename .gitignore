@@ -14,3 +14,24 @@ __pycache__/
 .pytest_cache/
 .coverage
 .venv*/
+
+# Local credentials and certificates
+*.pem
+*.key
+*.p12
+*.pfx
+.aws/
+
+# Python tooling and local environments
+venv/
+env/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+coverage.xml
+
+# Local editor and OS files
+.idea/
+.vscode/
+Thumbs.db
+Desktop.ini
